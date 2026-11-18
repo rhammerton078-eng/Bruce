@@ -5,6 +5,17 @@
 Mnemo is the AI inside ATLAS. It learns from everything you upload or teach it, builds a knowledge graph in your
 XAMPP MySQL database, and answers questions with citations. It runs 100% offline.
 
+## Lab PC with Deep Freeze (quick start)
+
+After every restart:
+1. github.com/rhammerton078-eng/Bruce → **Code → Download ZIP**, extract into `C:\xampp\htdocs`, rename `Bruce-main` → `atlas`.
+2. Right-click **`ATLAS Lab Setup.bat`** → **Run as administrator**. It finds or downloads Ollama + Qwen, starts XAMPP,
+   Ollama and the background learner, and opens the setup page.
+3. **Install database**, open ATLAS, and **Insert** your `.atlascard` to restore Mnemo's memory.
+
+The AI (Ollama + Qwen, about 10 GB) is too big for GitHub. Copy `C:\ATLAS-AI` to a USB drive as `X:\ATLAS-AI`;
+the setup script then uses it and downloads nothing.
+
 ## Install (Windows + XAMPP)
 
 1. Extract this folder to `C:\xampp\htdocs\atlas`.
