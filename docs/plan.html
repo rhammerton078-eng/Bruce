@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATLAS Project Plan</title>
+<style>
+:root{--bg:#07090d;--panel:#0e1219;--panel2:#141a26;--line:#1f2738;--text:#dbe3ef;--muted:#8592a8;--dim:#5d6a80;--accent:#38bdf8;--violet:#a78bfa;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--pink:#f472b6}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f6f8fb;--panel:#fff;--panel2:#eef2f7;--line:#dbe2ec;--text:#14202f;--muted:#4f5d72;--dim:#7a8699}}
+:root[data-theme="light"]{--bg:#f6f8fb;--panel:#fff;--panel2:#eef2f7;--line:#dbe2ec;--text:#14202f;--muted:#4f5d72;--dim:#7a8699}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.3px}
+h2{font-size:20px;margin:48px 0 6px}
+h2 small{display:block;font-size:13.5px;color:var(--muted);font-weight:400;margin-top:2px}
+.lead{color:var(--muted);max-width:760px;margin:0}
+.hero{display:flex;gap:16px;align-items:center;margin-bottom:10px}
+.orb{width:54px;height:54px;border-radius:16px;flex:none;background:radial-gradient(circle at 30% 30%,#7dd3fc,#0ea5e9 45%,#0c4a6e);box-shadow:0 0 30px rgba(56,189,248,.35)}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-right:6px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+svg{max-width:100%;height:auto;display:block}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.box{fill:var(--panel2);stroke:var(--line)}
+.t1{fill:var(--text);font-size:14px;font-weight:600}
+.t2{fill:var(--muted);font-size:11.5px}
+.arrow{stroke:var(--dim);stroke-width:1.6;fill:none;marker-end:url(#ah)}
+.arrow.a{stroke:var(--accent)}
+.k{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:6px}
+.status{display:flex;gap:8px;align-items:center;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line)}
+.status:last-child{border:0}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.done{background:var(--ok)} .next{background:var(--warn)} .later{background:var(--dim)}
+.phase h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+.phase p{margin:0 0 8px;color:var(--muted);font-size:13.5px}
+.pill{font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+.pill.done{background:rgba(52,211,153,.15);color:var(--ok)} .pill.next{background:rgba(251,191,36,.15);color:var(--warn)} .pill.later{background:var(--panel2);color:var(--muted)}
+ul.tight{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted)} ul.tight li{margin:2px 0}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+td b{color:var(--text)}
+.mem{border-left:3px solid var(--accent)}
+.mem.v{border-color:var(--violet)} .mem.p{border-color:var(--pink)} .mem.o{border-color:var(--ok)}
+code{font:12.5px ui-monospace,Consolas,monospace;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px}
+.flow span.s{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px}
+.flow i{color:var(--dim);font-style:normal}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero"><div class="orb"></div>
+    <div><h1>ATLAS · Mnemo</h1><div><span class="tag">Offline</span><span class="tag">XAMPP + MySQL</span><span class="tag">Local AI (Ollama)</span><span class="tag">Grows every day</span></div></div>
+  </div>
+  <p class="lead">Autonomous knowledge reconstruction and relationship discovery using semantic graph intelligence. Mnemo starts with an empty memory, learns from every file and prompt you give it, and keeps all of it in your own MySQL database, which you can monitor, download, restore or delete at any time.</p>
+
+  <h2>1 · System architecture<small>Everything runs on your PC. Nothing leaves it.</small></h2>
+  <div class="card scroll">
+    <svg viewBox="0 0 1060 430" role="img" aria-label="Architecture diagram">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5d6a80"/></marker></defs>
+      <!-- inputs -->
+      <rect class="box" x="10" y="30" width="190" height="370" rx="12"/>
+      <text class="t1" x="28" y="60">You teach</text>
+      <text class="t2" x="28" y="90">📄 PDF · DOCX · PPTX</text>
+      <text class="t2" x="28" y="112">📝 TXT · MD · HTML · CSV</text>
+      <text class="t2" x="28" y="134">🖼 PNG · JPG · WEBP</text>
+      <text class="t2" x="28" y="156">📥 storage/inbox folder</text>
+      <text class="t2" x="28" y="190">💬 remember: / define:</text>
+      <text class="t2" x="28" y="212">✏️ correct: (top trust)</text>
+      <text class="t2" x="28" y="234">👍 👎 answer feedback</text>
+      <text class="t2" x="28" y="268">❓ Questions</text>
+      <text class="t2" x="28" y="302">🗂 Collections · trust</text>
+      <!-- app -->
+      <rect class="box" x="260" y="30" width="330" height="370" rx="12"/>
+      <text class="t1" x="278" y="60">ATLAS app (Apache + PHP, htdocs/atlas)</text>
+      <rect class="box" x="278" y="78" width="294" height="56" rx="9"/><text class="t1" x="292" y="101" style="font-size:13px">Ingest pipeline</text><text class="t2" x="292" y="121">parse · OCR · vision · chunk · embed</text>
+      <rect class="box" x="278" y="144" width="294" height="56" rx="9"/><text class="t1" x="292" y="167" style="font-size:13px">Graph builder</text><text class="t2" x="292" y="187">entities · relations · aliases · mentions</text>
+      <rect class="box" x="278" y="210" width="294" height="56" rx="9"/><text class="t1" x="292" y="233" style="font-size:13px">Mnemo (Q&amp;A)</text><text class="t2" x="292" y="253">vector + keyword + graph → cited answer</text>
+      <rect class="box" x="278" y="276" width="294" height="56" rx="9"/><text class="t1" x="292" y="299" style="font-size:13px">Sleep cycle (nightly)</text><text class="t2" x="292" y="319">links · topics · confidence · gaps · backup</text>
+      <rect class="box" x="278" y="342" width="294" height="44" rx="9"/><text class="t1" x="292" y="369" style="font-size:13px">Memory manager <tspan class="t2">· storage · backup · wipe</tspan></text>
+      <!-- ollama -->
+      <rect class="box" x="650" y="30" width="180" height="150" rx="12"/>
+      <text class="t1" x="668" y="60">Ollama (local AI)</text>
+      <text class="t2" x="668" y="88">Chat: qwen2.5</text>
+      <text class="t2" x="668" y="110">Embeddings: nomic-embed</text>
+      <text class="t2" x="668" y="132">Vision: qwen2.5-vl</text>
+      <text class="t2" x="668" y="160">localhost:11434</text>
+      <!-- mysql -->
+      <rect x="650" y="210" width="400" height="190" rx="12" fill="rgba(56,189,248,.08)" stroke="#38bdf8"/>
+      <text class="t1" x="668" y="240">MySQL (XAMPP) · Mnemo's memory</text>
+      <text class="t2" x="668" y="268">Source: documents · chunks · chunk_embeddings</text>
+      <text class="t2" x="668" y="290">Semantic: entities · relations · aliases · mentions</text>
+      <text class="t2" x="668" y="312">Episodic: conversations · messages · ingest_log · digest</text>
+      <text class="t2" x="668" y="334">Taught: user_facts · feedback</text>
+      <text class="t2" x="668" y="356">System: settings · collections</text>
+      <text class="t2" x="668" y="384">+ storage/uploads (original files) · storage/backups</text>
+      <rect class="box" x="870" y="30" width="180" height="150" rx="12"/>
+      <text class="t1" x="888" y="60">You see</text>
+      <text class="t2" x="888" y="88">2D / 3D graph</text>
+      <text class="t2" x="888" y="110">Cited chat</text>
+      <text class="t2" x="888" y="132">Timeline · Overview</text>
+      <text class="t2" x="888" y="154">Storage warnings</text>
+      <path class="arrow a" d="M200 215 H258"/>
+      <path class="arrow" d="M572 106 C620 106 620 90 648 90"/>
+      <path class="arrow" d="M572 238 C620 238 620 140 648 140"/>
+      <path class="arrow a" d="M572 172 C615 172 615 260 648 260"/>
+      <path class="arrow a" d="M572 304 C615 304 615 320 648 320"/>
+      <path class="arrow a" d="M572 364 C615 364 615 370 648 370"/>
+      <path class="arrow" d="M960 208 V182"/>
+    </svg>
+  </div>
+
+  <h2>2 · Mnemo's memory, all in MySQL<small>Four kinds of memory, one database you control.</small></h2>
+  <div class="grid g4">
+    <div class="card mem"><div class="k">Source memory</div><b>What it read</b><p class="lead" style="font-size:13.5px">Every document, page and passage, with embeddings for meaning-based search.</p></div>
+    <div class="card mem v"><div class="k">Semantic memory</div><b>What it understands</b><p class="lead" style="font-size:13.5px">Concepts and the relationships between them: the knowledge graph.</p></div>
+    <div class="card mem p"><div class="k">Episodic memory</div><b>What happened</b><p class="lead" style="font-size:13.5px">Conversations, uploads, daily digests: the timeline of its life.</p></div>
+    <div class="card mem o"><div class="k">Taught memory</div><b>What you told it</b><p class="lead" style="font-size:13.5px">Facts, definitions, corrections and feedback, all at the highest trust.</p></div>
+  </div>
+
+  <h2>3 · How Mnemo gets smarter every day</h2>
+  <div class="card">
+    <div class="flow"><span class="s">📄 You upload</span><i>→</i><span class="s">Read &amp; chunk</span><i>→</i><span class="s">Embed</span><i>→</i><span class="s">Extract concepts</span><i>→</i><span class="s">Link into graph</span><i>→</i><span class="s">🌙 Sleep cycle connects ideas</span><i>→</i><span class="s">💬 Better cited answers</span><i>→</i><span class="s">✏️ Your corrections</span><i>↺</i></div>
+  </div>
+
+  <h2>4 · Memory &amp; storage control<small>Built in this round</small></h2>
+  <div class="grid g3">
+    <div class="card"><div class="k">⚠️ Storage warnings</div><ul class="tight"><li>Live DB size + free disk in the status bar</li><li>Warning and critical levels you choose</li><li>Uploads pause automatically when the disk is nearly full</li><li>Checks PHP / MySQL limits and tells you exactly what to change</li></ul></div>
+    <div class="card"><div class="k">💾 Download &amp; restore</div><ul class="tight"><li>Back up the database anytime (.sql.gz)</li><li>Full backup: database + original files (.zip)</li><li>Restore from a file, even on another PC</li><li>Automatic nightly backup, keeps the last 14</li><li>Export knowledge as Markdown or graph JSON</li></ul></div>
+    <div class="card"><div class="k">🗑 Delete memory</div><ul class="tight"><li>Forget one source or one concept</li><li>Delete chat history / taught facts</li><li>Reset the graph and re-learn from sources</li><li>Delete ALL memory, back to zero knowledge</li><li>Type DELETE to confirm, with a safety backup first</li></ul></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="k">About MySQL limits</div>
+    <table>
+      <tr><th>Limit</th><th>Default (XAMPP)</th><th>What it means</th><th>Recommended</th></tr>
+      <tr><td><b>Database / table size</b></td><td>64 TB per table</td><td>Not a real limit. Your disk fills up first.</td><td>Watch the disk gauge</td></tr>
+      <tr><td><b>upload_max_filesize</b> (PHP)</td><td>2–40 MB</td><td>Largest file you can upload</td><td><code>128M</code></td></tr>
+      <tr><td><b>post_max_size</b> (PHP)</td><td>8–40 MB</td><td>Largest upload request</td><td><code>128M</code></td></tr>
+      <tr><td><b>max_allowed_packet</b> (MySQL)</td><td>1–16 MB</td><td>Largest single row or query</td><td><code>64M</code></td></tr>
+      <tr><td><b>innodb_buffer_pool_size</b></td><td>16–128 MB</td><td>MySQL's memory cache, which affects speed</td><td><code>1G–2G</code></td></tr>
+      <tr><td><b>Vector search (PHP)</b></td><td>about 50k passages</td><td>Gets slower beyond that</td><td>MariaDB 11.7 VECTOR later</td></tr>
+    </table>
+  </div>
+
+  <h2>5 · Offline desktop software</h2>
+  <div class="grid g2">
+    <div class="card"><div class="k">One-click start</div><ul class="tight"><li><code>launcher\Create Desktop Shortcut.bat</code> adds an <b>ATLAS</b> icon to your desktop</li><li>The icon starts MySQL, Apache, Ollama and the background learner</li><li>It opens ATLAS in its own app window (Edge / Chrome app mode)</li><li><code>Stop ATLAS.bat</code> shuts everything down</li></ul></div>
+    <div class="card"><div class="k">Installable app</div><ul class="tight"><li>Browser menu → “Install ATLAS” to pin it to the Start menu and taskbar</li><li>Cached app shell, so it opens instantly</li><li>No internet needed after you download the models</li><li>Only answers your own PC unless you allow LAN access</li></ul></div>
+  </div>
+
+  <h2>6 · Roadmap</h2>
+  <div class="grid g2">
+    <div class="card phase"><h3>Phase 1–3 · Core <span class="pill done">Done</span></h3><p>Upload → read → embed → graph → cited chat. 2D/3D explorer, path finder, timeline, overview, sleep cycle, teaching commands, time travel.</p></div>
+    <div class="card phase"><h3>Memory &amp; offline <span class="pill done">Done</span></h3><p>Storage monitor and warnings, limits checker, backup / download / restore, memory wipe, re-embed, index rebuild, dedicated DB user, launchers, installable app.</p></div>
+    <div class="card phase"><h3>Memory cards <span class="pill done">Done</span></h3><p>One MySQL database per card. Insert, eject (to a single password-protectable file), switch, blank card. Move Mnemo's memory between PCs like a memory card in a phone.</p></div>
+    <div class="card phase"><h3>Baby mode <span class="pill done">Done</span></h3><p>Strict "knows only what you taught" answers, endless levels from Newborn onward, Mnemo's curiosity questions, lessons with graded exams, a growth diary, optional forgetting.</p></div>
+    <div class="card phase"><h3>Tutorial mode <span class="pill done">Done</span></h3><p>Learn hub with 9 guided spotlight chapters, a self-checking 12-task checklist, a demo knowledge pack with a built-in contradiction, a ? help button on every screen, and a first-run welcome.</p></div>
+    <div class="card phase"><h3>Phase 5 · Truth engine <span class="pill done">Done</span></h3><ul class="tight"><li><code>claims</code> + <code>contradictions</code>: detect disagreeing sources</li><li><code>fact_versions</code>: full history of every fact</li><li>Review queue for low-confidence facts</li><li>Duplicate-concept merge (with undo)</li></ul></div>
+    <div class="card phase"><h3>Phase 6 · Self-improvement <span class="pill done">Done</span></h3><ul class="tight"><li>Golden test set, scored nightly (is Mnemo improving?)</li><li>Self-quiz on new material</li><li>Reuse approved answers (<code>qa_memory</code>)</li></ul></div>
+    <div class="card phase"><h3>Phase 7 · Assistant features <span class="pill done">Done</span></h3><ul class="tight"><li>Standing questions, re-answered when knowledge changes</li><li>Quiz / flashcard mode, where Mnemo teaches you back</li><li>Hypothesis suggestions (“these ideas may be connected”)</li><li>Audio and video via local Whisper (ffmpeg + whisper.cpp)</li></ul></div>
+    <div class="card phase"><h3>Phase 8 · Scale <span class="pill done">Done</span></h3><ul class="tight"><li>Image-to-image similarity (visual hash + meaning) and search by image</li><li>MariaDB 11.7+ native vector index (one-click, optional)</li><li>Training-data export + LoRA fine-tune guide (docs/finetune.html)</li></ul></div>
+  </div>
+
+  <h2>7 · Suggestions</h2>
+  <div class="card">
+    <table>
+      <tr><th>Area</th><th>Suggestion</th></tr>
+      <tr><td><b>Feeding</b></td><td>Start with foundational material (overviews, textbooks, glossaries), then specifics. Use a collection per subject.</td></tr>
+      <tr><td><b>Quality</b></td><td>Raise trust on reliable sources and lower it on weak ones. Use <code>correct:</code> whenever Mnemo is wrong.</td></tr>
+      <tr><td><b>Daily habit</b></td><td>Schedule <code>run-nightly.bat</code> (2 AM). Check the Overview's “knowledge gaps” and upload material that fills them.</td></tr>
+      <tr><td><b>Safety</b></td><td>Copy a <b>Full backup</b> to a USB drive weekly. Keep at least 10 GB free disk space.</td></tr>
+      <tr><td><b>Hardware</b></td><td>8 GB RAM → <code>qwen2.5:3b</code>. 16 GB → <code>qwen2.5:7b</code>. 32 GB or GPU → <code>qwen2.5:14b</code> for much better extraction.</td></tr>
+      <tr><td><b>Security</b></td><td>Create the dedicated <code>atlas</code> MySQL user in setup. Leave LAN access off unless you need it.</td></tr>
+      <tr><td><b>Thesis</b></td><td>The golden test set (Phase 6) gives you measurable results: accuracy over time as knowledge grows.</td></tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>

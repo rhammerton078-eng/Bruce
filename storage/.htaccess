@@ -1,0 +1,2 @@
+# Stored files are streamed through api/index.php?action=file, never served directly
+Require all denied
