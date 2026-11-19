@@ -447,3 +447,24 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--
 .toggle-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
 .toggle-row:last-child{border-bottom:0} .toggle-row b{color:var(--text);display:block;font-weight:500}
 @media (max-width:1500px){#growPill span,#cardPill span{display:none}}
+
+/* Neuron preview */
+.pv{width:min(1240px,96vw);height:min(860px,92vh);background:var(--panel);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.pv-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pv-title{font-size:18px;font-weight:650}
+.pv-body{flex:1;display:grid;grid-template-columns:1.55fr 1fr;min-height:0}
+.pv-view{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
+.pv-tabs{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.pv-tab{display:flex;gap:6px;align-items:center;white-space:nowrap;height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text-2);cursor:pointer;font-size:12px}
+.pv-tab.on{border-color:var(--accent);color:var(--text);background:var(--accent-soft)}
+.pv-viewer{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto}
+.pv-srchead{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.pv-frame{flex:1;min-height:420px;width:100%;border:0;background:#2a2a2e}
+.pv-img{flex:1;display:grid;place-items:center;padding:12px;background:#05070a;min-height:300px}
+.pv-img img{max-width:100%;max-height:60vh;border-radius:8px}
+.pv-passage{padding:12px 16px;font-size:13.5px;line-height:1.7;color:var(--text-2);border-top:1px solid var(--line);max-height:34vh;overflow:auto}
+.pv-passage p{margin:4px 0 10px;white-space:pre-wrap}
+.pv-passage mark{background:rgba(251,191,36,.28);color:var(--text);padding:0 2px;border-radius:3px}
+.pv-sub{font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.pv-side{overflow:auto;padding:12px}
+@media (max-width:900px){.pv-body{grid-template-columns:1fr}.pv-view{border-right:0;border-bottom:1px solid var(--line);min-height:50vh}}

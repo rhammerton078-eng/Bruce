@@ -254,7 +254,7 @@ function renderGraph() {
         ctx.globalAlpha = 1;
       })
       .nodePointerAreaPaint((n, color, ctx) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(n.x, n.y, nodeSize(n) + 2, 0, 2 * Math.PI); ctx.fill(); })
-      .onNodeHover(n => onHover(n)).onNodeClick(n => { openEntity(n.id); })
+      .onNodeHover(n => onHover(n)).onNodeClick(n => { openEntity(n.id); openPreview(n.id); })
       .onBackgroundClick(() => { S.selectedId = null; S.highlight.clear(); refreshGraphStyle(); showOverview(); })
       .cooldownTicks(220).d3VelocityDecay(.3);
     g.d3Force('charge').strength(-70).distanceMax(420);
@@ -269,7 +269,7 @@ function renderGraph() {
       .linkColor(l => isLinked(l) ? '#7dd3fc' : l.origin === 'inferred' ? '#6d5bd0' : '#2b6c8f').linkOpacity(.35)
       .linkWidth(l => isLinked(l) ? 1.2 : 0).linkDirectionalParticles(l => isLinked(l) ? 3 : 0).linkDirectionalParticleWidth(1.6)
       .onNodeHover(n => { el.style.cursor = n ? 'pointer' : ''; onHover(n, true); })
-      .onNodeClick(n => { openEntity(n.id); const d = 90, r = 1 + d / Math.hypot(n.x, n.y, n.z || 1); g.cameraPosition({x: n.x * r, y: n.y * r, z: n.z * r}, n, 900); })
+      .onNodeClick(n => { openEntity(n.id); openPreview(n.id); const d = 90, r = 1 + d / Math.hypot(n.x, n.y, n.z || 1); g.cameraPosition({x: n.x * r, y: n.y * r, z: n.z * r}, n, 900); })
       .onBackgroundClick(() => { S.selectedId = null; S.highlight.clear(); refreshGraphStyle(); showOverview(); });
     g._mode = '3d';
     g.onEngineStop(() => { if (!g._fitted) { g.zoomToFit(600, 40); g._fitted = true; } });
@@ -1587,6 +1587,112 @@ async function loadGrow() {
   $('#babyForget').onchange = e => api('baby_settings', {forgetting: e.target.checked}).then(() => toast('Saved', 'ok'));
 }
 $('#btnWonder').onclick = async () => { const r = await api('wonder', {}); toast(r.new ? `Mnemo has ${r.new} new question(s) for you` : 'Mnemo has no new questions right now', r.new ? 'ok' : ''); loadGrow(); refreshStatus(); };
+
+// ---------------------------------------------------------------- Neuron preview (click a dot in the graph)
+const pv = {stack: [], entity: null, srcIdx: 0};
+function pvEnsure() {
+  let m = $('#pvModal');
+  if (m) return m;
+  m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.id = 'pvModal';
+  m.innerHTML = '<div class="pv" id="pvBox"></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) pvClose(); });
+  return m;
+}
+function pvClose() { const m = $('#pvModal'); if (m) m.classList.remove('show'); pv.stack = []; }
+const pvRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function pvHighlight(text, e) {
+  const names = [e.name, ...(e.aliases || [])].filter(n => n && n.length > 1).sort((a, b) => b.length - a.length);
+  let h = esc(text);
+  if (!names.length) return h;
+  const re = new RegExp('(' + names.map(n => pvRe(esc(n))).join('|') + ')', 'gi');
+  return h.replace(re, '<mark>$1</mark>');
+}
+const pvIsPdf = s => /pdf/i.test(s.mime || '') || /\.pdf$/i.test(s.filename || '');
+const pvIsImg = s => s.kind === 'image' || /^image\//i.test(s.mime || '');
+
+async function openPreview(id, push = true) {
+  const m = pvEnsure();
+  if (push && pv.entity && pv.entity.id !== id && m.classList.contains('show')) pv.stack.push(pv.entity.id);
+  if (!m.classList.contains('show')) pv.stack = [];
+  m.classList.add('show');
+  $('#pvBox').innerHTML = '<div class="empty" style="padding:80px">Loading preview…</div>';
+  let e;
+  try { e = await api('entity', {id}); } catch (err) { $('#pvBox').innerHTML = `<div class="alert critical" style="margin:20px">${esc(err.message)}</div>`; return; }
+  pv.entity = e; pv.srcIdx = 0;
+  pvRender();
+}
+
+function pvRender() {
+  const e = pv.entity, tc = TYPE_COLOR[e.type] || '#94a3b8';
+  const rel = e.relations.slice(0, 12).map(r => `<div class="rel" data-pv="${r.other_id}" title="${esc(r.evidence || '')}">
+      <span class="rt">${r.direction === 'out' ? '→' : '←'} ${esc(r.type.replace(/_/g, ' '))}</span><span class="on">${esc(r.other_name)}</span>
+      ${r.origin === 'inferred' ? '<span class="badge violet">inferred</span>' : r.origin === 'user' ? '<span class="badge ok">taught</span>' : ''}</div>`).join('');
+  const co = (e.cooccur || []).slice(0, 10).map(c => `<div class="rel" data-pv="${c.id}">
+      <span style="color:${TYPE_COLOR[c.type] || '#94a3b8'}">${icon(TYPE_ICON[c.type] || 'tag', 'sm')}</span><span class="on">${esc(c.name)}</span>
+      <span class="muted" style="font-size:11px">${c.n}× together</span>${+c.linked ? '' : '<span class="badge violet" title="Appears together but not linked in the graph yet">hidden link?</span>'}</div>`).join('');
+  const docs = e.sources.map((s, i) => `<div class="rel" data-src="${i}"><span>${icon(pvIsImg(s) ? 'image' : 'doc', 'sm')}</span><span class="on">${esc(s.title)}</span><span class="muted" style="font-size:11px">${s.mentions}× · p.${s.first_page || 1}</span></div>`).join('');
+  const facts = (e.claims || []).filter(c => c.status !== 'rejected').slice(0, 4).map(c => `<div class="claim ${c.status}">${c.origin === 'user' ? '<span class="badge ok">taught</span>' : c.status === 'disputed' ? '<span class="badge warn">disputed</span>' : ''}<span style="flex:1">${esc(c.statement)}</span></div>`).join('');
+  $('#pvBox').innerHTML = `
+    <div class="pv-head">
+      ${pv.stack.length ? `<button class="btn ghost sm icon" id="pvBack" title="Back">${icon('back', 'sm')}</button>` : ''}
+      <span class="badge" style="color:${tc};border-color:${tc}55;background:${tc}14">${icon(TYPE_ICON[e.type] || 'tag', 'sm')}${esc(e.type)}</span>
+      <div class="pv-title">${esc(e.name)}</div>
+      <span class="muted" style="font-size:12px">${e.mention_count} mentions · ${e.relations.length} links · ${Math.round(e.confidence * 100)}% confidence</span>
+      <span style="flex:1"></span>
+      <button class="btn sm" id="pvAsk">${icon('chat', 'sm')}Ask about this</button>
+      <button class="btn sm" id="pvGraph">${icon('fit', 'sm')}Show in graph</button>
+      <button class="btn ghost sm icon" id="pvX" title="Close (Esc)">${icon('x', 'sm')}</button>
+    </div>
+    <div class="pv-body">
+      <div class="pv-view">
+        ${e.sources.length > 1 ? `<div class="pv-tabs">${e.sources.map((s, i) => `<button class="pv-tab ${i === pv.srcIdx ? 'on' : ''}" data-src="${i}">${icon(pvIsImg(s) ? 'image' : 'doc', 'sm')}${esc(s.title)}</button>`).join('')}</div>` : ''}
+        <div class="pv-viewer" id="pvViewer"></div>
+      </div>
+      <div class="pv-side">
+        <div class="card"><h4>About</h4><div style="font-size:13px;color:var(--text-2)">${esc(e.description || 'No description yet. Teach Mnemo with define: or upload a document about it.')}</div>
+          ${e.aliases.length ? `<div class="chips" style="margin-top:8px">${e.aliases.map(a => `<span class="badge">${esc(a)}</span>`).join('')}</div>` : ''}</div>
+        <div class="card"><h4>Links <span>${e.relations.length}</span></h4>${rel || '<div class="empty">No links yet</div>'}</div>
+        <div class="card"><h4>Cross-references</h4>
+          <div class="muted pv-sub">Mentioned in ${e.sources.length} source${e.sources.length === 1 ? '' : 's'}</div>${docs || '<div class="empty">—</div>'}
+          <div class="muted pv-sub" style="margin-top:10px">Often appears together with</div>${co || '<div class="empty">—</div>'}</div>
+        ${facts ? `<div class="card"><h4>Facts</h4>${facts}</div>` : ''}
+      </div>
+    </div>`;
+  $('#pvX').onclick = pvClose;
+  if ($('#pvBack')) $('#pvBack').onclick = () => openPreview(pv.stack.pop(), false);
+  $('#pvAsk').onclick = () => { pvClose(); setView('ask'); $('#chatInput').value = `What do my sources say about ${e.name}?`; autoGrow(); $('#chatInput').focus(); };
+  $('#pvGraph').onclick = () => { pvClose(); if (S.view !== 'graph') setView('graph'); setTimeout(() => focusNode(e.id), 80); };
+  $$('#pvBox [data-pv]').forEach(el => el.onclick = () => openPreview(+el.dataset.pv));
+  $$('#pvBox [data-src]').forEach(el => el.onclick = () => { pv.srcIdx = +el.dataset.src; pvRender(); });
+  pvViewer();
+}
+
+async function pvViewer() {
+  const e = pv.entity, box = $('#pvViewer'), s = e.sources[pv.srcIdx];
+  if (!s) {
+    box.innerHTML = `<div class="pv-passage">${e.snippets.length ? e.snippets.map(x => `<p>${pvHighlight(x.text, e)}…</p>`).join('') : '<div class="empty">No source document; this concept was taught directly.</div>'}</div>`;
+    return;
+  }
+  const fileUrl = `api/index.php?action=file&id=${s.document_id}`;
+  const head = `<div class="pv-srchead">${icon(pvIsImg(s) ? 'image' : 'doc', 'sm')}<b>${esc(s.title)}</b><span class="muted">${esc(s.filename)}${s.first_page ? ' · page ' + s.first_page : ''}</span><span style="flex:1"></span>
+      ${s.has_file ? `<a class="btn ghost sm" href="${fileUrl}" target="_blank">${icon('link', 'sm')}Open file</a>` : ''}
+      <button class="btn ghost sm" id="pvDoc">${icon('files', 'sm')}Source details</button></div>`;
+  let passage = '';
+  if (s.chunk_id) { try { const c = await api('chunk', {id: s.chunk_id}); passage = c.content || ''; } catch {} }
+  const passHtml = passage ? `<div class="pv-passage"><div class="pv-sub muted">Passage where Mnemo learned it${s.first_page ? ' (page ' + s.first_page + ')' : ''}</div><p>${pvHighlight(passage, e)}</p></div>` : '';
+  if (s.has_file && pvIsPdf(s)) {
+    box.innerHTML = head + `<iframe class="pv-frame" src="${fileUrl}#page=${s.first_page || 1}&zoom=page-width" title="${esc(s.title)}"></iframe>` + passHtml;
+  } else if (s.has_file && pvIsImg(s)) {
+    box.innerHTML = head + `<div class="pv-img"><img src="${fileUrl}" alt="${esc(s.title)}"></div>` + passHtml;
+  } else {
+    box.innerHTML = head + (passHtml || '<div class="empty">No preview available for this file type. Use "Open file".</div>');
+  }
+  if ($('#pvDoc')) $('#pvDoc').onclick = () => { pvClose(); openDocument(s.document_id); };
+  const mk = box.querySelector('.pv-passage mark'); if (mk) mk.scrollIntoView({block: 'center'});
+}
 
 // ---------------------------------------------------------------- shell
 $$('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));

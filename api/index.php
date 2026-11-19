@@ -106,6 +106,22 @@ try {
             $e['history'] = (new Truth())->history('entity', (int)$e['id']);
             $e['merges'] = $db->all('SELECT id, merged_name, created_at, undone_at FROM entity_merges WHERE kept_id = ? ORDER BY id DESC LIMIT 10', [$e['id']]);
             $e['flashcard'] = $db->val('SELECT id FROM flashcards WHERE entity_id = ?', [$e['id']]);
+            // Preview: how each source can be shown, and cross-references
+            foreach ($e['sources'] as &$src) {
+                $d = $db->one('SELECT filename, mime, stored_path FROM documents WHERE id = ?', [$src['document_id']]);
+                $src['filename'] = $d['filename'] ?? '';
+                $src['mime'] = $d['mime'] ?? '';
+                $src['has_file'] = !empty($d['stored_path']);
+                $src['chunk_id'] = (int)$db->val('SELECT c.id FROM entity_mentions m JOIN chunks c ON c.id = m.chunk_id
+                    WHERE m.entity_id = ? AND c.document_id = ? ORDER BY c.seq LIMIT 1', [$e['id'], $src['document_id']]);
+            }
+            unset($src);
+            // concepts that appear in the same passages (even when not directly linked)
+            $e['cooccur'] = $db->all('SELECT o.id, o.name, o.type, COUNT(*) AS n,
+                    (SELECT COUNT(*) FROM relations r WHERE (r.source_id = o.id AND r.target_id = ?) OR (r.target_id = o.id AND r.source_id = ?)) AS linked
+                FROM entity_mentions m1 JOIN entity_mentions m2 ON m2.chunk_id = m1.chunk_id AND m2.entity_id <> m1.entity_id
+                JOIN entities o ON o.id = m2.entity_id
+                WHERE m1.entity_id = ? GROUP BY o.id, o.name, o.type ORDER BY n DESC, o.mention_count DESC LIMIT 15', [$e['id'], $e['id'], $e['id']]);
             json_out($e);
 
         case 'path':
