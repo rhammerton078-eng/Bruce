@@ -1,0 +1,27 @@
+ATLAS / MNEMO - WHAT TO KEEP IN TELEGRAM (Saved Messages)
+==========================================================
+
+KEEP IN TELEGRAM
+  [ ] ATLAS-models.part01 ... part05   the AI brain (Qwen + embed + vision)   once
+  [ ] OllamaSetup.exe                  the AI program                         once
+  [ ] Mnemo-YYYY-MM-DD.atlascard       Mnemo's memory (Eject)                 EVERY DAY before shutdown
+  [ ] Your teaching files              PDFs / DOCX / images you uploaded       when you add new ones
+  [ ] atlas-latest.zip                 spare copy of the code (also on GitHub) after updates
+  [ ] ATLAS Restore from Telegram.bat  one-click rebuild after a restart       once
+  [ ] ATLAS-Batuto-Format.pdf + PPT    teacher's format / presentation
+
+  Optional: C:\xampp\htdocs\atlas\config.local.php (holds the ATLAS DB password - Saved Messages only)
+  Keep only the newest 2 .atlascard files. Pin the newest one.
+
+BEFORE SHUTDOWN (Deep Freeze erases C:)
+  1. ATLAS > card pill (top bar) > Eject... > name it Mnemo-2026-11-19 (today's date)
+  2. Send the .atlascard file to Telegram Saved Messages
+
+AFTER A RESTART
+  1. GitHub: github.com/rhammerton078-eng/Bruce > Code > Download ZIP
+     Extract so the files are in C:\xampp\htdocs\atlas  (index.php must be directly inside)
+  2. From Telegram download into Downloads:
+       ATLAS-models.part01..05, OllamaSetup.exe, ATLAS Restore from Telegram.bat, newest .atlascard
+  3. Right-click "ATLAS Restore from Telegram.bat" > Run as administrator
+  4. setup.php opens > Install database > Open ATLAS
+  5. Card pill > Insert > pick the newest .atlascard  -> Mnemo remembers everything
