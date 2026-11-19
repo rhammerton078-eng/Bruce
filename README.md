@@ -180,3 +180,10 @@ sql/schema.sql           Database schema (setup.php imports it)
 assets/                  CSS, JS, bundled graph libraries (offline)
 storage/                 uploads/, inbox/, backups/, cards/ (one folder per extra memory card)
 ```
+
+## Presentation & lab backups
+
+- `docs/presentation/ATLAS-Batuto-Format-UPDATED.pdf` (and `.pptx`): the 34-slide title-hearing deck, including the
+  "System Features at a Glance" full-screen section. The added slides are in `docs/presentation/new-slides/`.
+- `telegram/`: `ATLAS Restore from Telegram.bat` rebuilds the AI on a Deep Freeze lab PC from the files kept in Telegram
+  (model parts + Ollama), and `TELEGRAM-CHECKLIST.txt` lists what to keep there. Eject a memory card before every shutdown.
