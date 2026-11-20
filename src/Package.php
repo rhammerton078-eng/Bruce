@@ -29,6 +29,13 @@ final class Package
         return $files;
     }
 
+    private static function isccFound(): bool
+    {
+        foreach ([getenv('ProgramFiles'), getenv('ProgramFiles(x86)'), getenv('LOCALAPPDATA') . '/Programs'] as $d)
+            foreach (['Inno Setup 7', 'Inno Setup 6'] as $v) if ($d && is_file("$d/$v/ISCC.exe")) return true;
+        return false;
+    }
+
     public static function info(): array
     {
         $files = self::baseFiles();
@@ -60,11 +67,12 @@ final class Package
         $name = self::cleanName($name);
         $dest = rtrim(trim($dest), '\\/');
         if ($dest === '') throw new RuntimeException('Choose where to save it, for example D:\\ATLAS-Downloads');
-        if (!self::baseFiles()) throw new RuntimeException('The base installer is not built yet (see the one-time step in this window).');
+        $build = !self::baseFiles();
+        if ($build && PHP_OS_FAMILY === 'Windows' && !self::isccFound()) throw new RuntimeException('One free tool is missing: install Inno Setup 7 from jrsoftware.org/isdl.php, then click Download again.');
         $job = json_decode((string)@file_get_contents(self::jobFile()), true);
-        if (is_array($job) && ($job['state'] ?? '') === 'working' && time() - (int)($job['ts'] ?? 0) < 120) throw new RuntimeException('A download is already being prepared.');
+        if (is_array($job) && ($job['state'] ?? '') === 'working' && time() - (int)($job['ts'] ?? 0) < (!empty($job['build']) ? 3600 : 120)) throw new RuntimeException('A download is already being prepared.');
         if (!is_dir($dest) && !@mkdir($dest, 0777, true)) throw new RuntimeException("Cannot create the folder $dest. Check the drive letter.");
-        $need = 0;
+        $need = $build ? 11 * 1073741824 : 0;
         foreach (self::baseFiles() as $f) $need += (int)filesize($f);
         $free = @disk_free_space($dest);
         if ($free !== false && $free < $need + 200 * 1048576) throw new RuntimeException('Not enough free space on that drive: ' . round($need / 1073741824, 1) . ' GB needed, ' . round($free / 1073741824, 1) . ' GB free.');
@@ -72,7 +80,7 @@ final class Package
         // The memory card (what this AI has learned, right now)
         [$token] = Cards::export(Cards::activeId());
         $job = ['state' => 'working', 'pct' => 0, 'msg' => 'Starting…', 'ts' => time(), 'name' => $name,
-                'dest' => $dest, 'card' => Cards::exportPath($token), 'files' => self::baseFiles(), 'folder' => ''];
+                'dest' => $dest, 'card' => Cards::exportPath($token), 'files' => self::baseFiles(), 'build' => $build, 'folder' => ''];
         file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         $php = PHP_OS_FAMILY === 'Windows' ? (is_file(PHP_BINDIR . '\\php.exe') ? PHP_BINDIR . '\\php.exe' : 'php') : (PHP_BINARY ?: 'php');
@@ -100,6 +108,16 @@ final class Package
             if (!copy($job['card'], $pkg . DIRECTORY_SEPARATOR . 'memory.atlascard')) throw new RuntimeException('Could not add the memory card.');
             @unlink($job['card']);
             file_put_contents($pkg . DIRECTORY_SEPARATOR . 'identity.json', json_encode(['ai_name' => $job['name'], 'model' => 'mnemo:7b', 'created' => date('c')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            if (!empty($job['build'])) {
+                // First download on this PC: prepare the AI installer once (later downloads skip this)
+                $save(['pct' => 1, 'msg' => 'First download: preparing the AI installer (one time only, about 10–30 minutes)…']);
+                $bat = realpath(__DIR__ . '/../installer/Build ATLAS installer.bat');
+                $log = atlas_config()['storage_root'] . '/logs/build.log';
+                @mkdir(dirname($log), 0777, true);
+                exec('cmd /c ""' . $bat . '" newborn < NUL > "' . $log . '" 2>&1"');
+                $job['files'] = self::baseFiles();
+                if (!$job['files']) throw new RuntimeException('Preparing the AI installer failed. Details: storage\\logs\\build.log');
+            }
             $save(['msg' => 'Copying the AI…']);
 
             $total = 0;

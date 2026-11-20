@@ -30,8 +30,11 @@ echo.
 echo   Which Mnemo should the installer contain?
 echo     1 = Base for the "Download my AI" button  (empty memory - do this once)
 echo     2 = MY Mnemo       (everything it has learned on this PC)
+set "AUTO="
+if /I "%~1"=="newborn" ( set "AUTO=1" & set "MODE=newborn" & echo   Automatic build ^(started by the Download my AI button^) & goto :mode_ok )
 choice /C 12 /N /M "  Press 1 or 2: "
 if errorlevel 2 ( set "MODE=keep" ) else ( set "MODE=newborn" )
+:mode_ok
 
 if "%MODE%"=="keep" (
   echo.
@@ -92,5 +95,6 @@ echo   [ok] Done:  %OUT%\ATLAS-Setup.exe  (+ ATLAS-Setup-*.bin)
 echo   Keep ALL files from that folder together when you copy them.
 echo   -------------------------------------------------------------
 if "%MODE%"=="newborn" echo   The "Download my AI" button in ATLAS is now ready to use.
+if defined AUTO exit /b 0
 explorer "%OUT%"
 pause

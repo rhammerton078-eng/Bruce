@@ -907,11 +907,9 @@ async function openDownload() {
     <label class="fld">What's the name of your AI? <input class="input" id="dlName" maxlength="40" value="${esc(info.ai_name)}" placeholder="e.g. Bruce AI"></label>
     <div class="dl-fixed"><span>${icon('cpu', 'sm')} Model: <b>Mnemo</b> 🔒</span><span><img src="assets/icon.svg" alt=""> Logo: <b>M</b> 🔒</span><span class="muted">These stay the same.</span></div>
     <label class="fld">Save to <input class="input" id="dlDest" value="${esc(info.default_dest)}"></label>
-    <div class="muted" style="font-size:12px;margin-top:-4px">${info.base_ready ? 'About ' + gb(info.base_size) + '. Use a drive with enough space, like D:\\ or a USB drive.' : ''}</div>
-    ${info.base_ready ? '' : `<div class="alert warn" style="margin-top:12px"><div><b>One-time step first.</b> Build the base installer once (it holds the web server and the AI):<br>
-      run <code>C:\\xampp\\htdocs\\atlas\\installer\\Build ATLAS installer.bat</code> and press <b>1</b>. It goes to <code>${esc(info.base_dir)}</code>. After that, this button works any time.</div></div>`}
+    <div class="muted" style="font-size:12px;margin-top:-4px">${info.base_ready ? 'About ' + gb(info.base_size) + '. Use a drive with enough space, like D:\\ or a USB drive.' : 'About 10 GB. The first download takes longer (it prepares the AI once). After that it is quick.'}</div>
     ${info.job && info.job.state === 'done' ? `<div class="alert ok" style="margin-top:12px"><div>Last download: <code>${esc(info.job.folder)}</code></div></div>` : ''}
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="dlGo" ${info.base_ready ? '' : 'disabled'}>${icon('download', 'sm')}Download</button></div>`;
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="dlGo">${icon('download', 'sm')}Download</button></div>`;
   $('#dlName').focus(); $('#dlName').select();
   $('#dlGo').onclick = async () => {
     const b = $('#dlGo'); b.disabled = true; b.textContent = 'Preparing…';
