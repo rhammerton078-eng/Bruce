@@ -317,12 +317,12 @@ try {
 
         case 'settings':
             $cfg = atlas_config();
-            json_out(['app' => $cfg['app'] ?? [], 'ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model'])),
+            json_out(['app' => $cfg['app'] ?? [], 'ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model', 'num_ctx', 'embed_on_cpu'])),
                 'retrieval' => $cfg['retrieval'], 'tools' => ['pdftotext' => \Atlas\DocParser::tool('pdftotext'), 'tesseract' => \Atlas\DocParser::tool('tesseract')] + Media::tools(),
                 'vector' => Vector::nativeSupported(), 'gd' => function_exists('imagecreatefromstring')]);
 
         case 'settings_save':
-            $allowed = ['ollama.chat_model', 'ollama.embed_model', 'ollama.vision_model', 'retrieval.top_k'];
+            $allowed = ['ollama.chat_model', 'ollama.embed_model', 'ollama.vision_model', 'ollama.num_ctx', 'ollama.embed_on_cpu', 'retrieval.top_k'];
             foreach ($allowed as $k) {
                 $v = $in(str_replace('.', '_', $k));
                 if ($v !== null) $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', [$k, trim((string)$v)]);

@@ -15,6 +15,12 @@ final class Ollama
         $this->c = atlas_config()['ollama'];
     }
 
+    /** One context size for every request: changing it between calls makes Ollama reload the model. */
+    private function ctx(): int
+    {
+        return max(2048, min(32768, (int)($this->c['num_ctx'] ?? 8192)));
+    }
+
     public function model(string $role): string
     {
         return (string)($this->c[$role . '_model'] ?? '');
@@ -89,7 +95,9 @@ final class Ollama
     /** @return float[][] */
     public function embed(array $texts): array
     {
-        $j = $this->request('/api/embed', ['model' => $this->model('embed'), 'input' => array_values($texts), 'truncate' => true]);
+        $body = ['model' => $this->model('embed'), 'input' => array_values($texts), 'truncate' => true];
+        if (filter_var($this->c['embed_on_cpu'] ?? false, FILTER_VALIDATE_BOOLEAN)) $body['options'] = ['num_gpu' => 0];
+        $j = $this->request('/api/embed', $body);
         return $j['embeddings'] ?? [];
     }
 
@@ -99,7 +107,7 @@ final class Ollama
             'model' => $opts['model'] ?? $this->model('chat'),
             'messages' => $messages,
             'stream' => false,
-            'options' => ['temperature' => $opts['temperature'] ?? 0.2, 'num_ctx' => $opts['num_ctx'] ?? 8192],
+            'options' => ['temperature' => $opts['temperature'] ?? 0.2, 'num_ctx' => $opts['num_ctx'] ?? $this->ctx()],
         ];
         if (isset($opts['format'])) $body['format'] = $opts['format'];
         $j = $this->request('/api/chat', $body);
@@ -122,7 +130,7 @@ final class Ollama
             'model' => $this->model('chat'),
             'messages' => $messages,
             'stream' => true,
-            'options' => ['temperature' => $opts['temperature'] ?? 0.3, 'num_ctx' => $opts['num_ctx'] ?? 8192],
+            'options' => ['temperature' => $opts['temperature'] ?? 0.3, 'num_ctx' => $opts['num_ctx'] ?? $this->ctx()],
         ], function (array $j) use (&$full, $onToken) {
             if (isset($j['error'])) throw new RuntimeException((string)$j['error']);
             $t = $j['message']['content'] ?? '';

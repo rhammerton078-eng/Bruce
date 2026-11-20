@@ -9,16 +9,17 @@ final class Extractor
     private const SYSTEM = <<<TXT
 You are a precise knowledge-graph extraction engine. From the passage, extract only what is explicitly stated.
 Return JSON exactly in this shape:
-{"entities":[{"name":"...","type":"person|organization|place|concept|technology|event|work|product|metric|other","description":"one factual sentence from the passage"}],
- "relations":[{"source":"entity name","target":"entity name","type":"short_verb_phrase","evidence":"short exact quote from passage"}],
- "claims":[{"subject":"entity name","predicate":"short verb phrase","object":"value or entity","statement":"one self-contained factual sentence, with dates/numbers if stated"}]}
+{"entities":[{"name":"...","type":"person|organization|place|concept|technology|event|work|product|metric|other","description":"one short factual sentence (max 15 words)"}],
+ "relations":[{"source":"entity name","target":"entity name","type":"short_verb_phrase","evidence":"short exact quote (max 12 words)"}],
+ "claims":[{"subject":"entity name","predicate":"short verb phrase","object":"value or entity","statement":"one self-contained factual sentence (max 25 words), with dates/numbers if stated"}]}
 Rules:
 - Use the most complete canonical name (e.g. "Albert Einstein" not "he").
-- 3 to 15 entities, only important ones. Skip generic words ("system", "data", "paper").
+- 3 to 12 entities, only important ones. Skip generic words ("system", "data", "paper").
 - Relation types are lowercase snake_case verbs such as: is_a, part_of, created_by, causes, uses, located_in, depends_on, contradicts, supports, defined_as, related_to.
 - Every relation's source and target must appear in entities.
-- 0 to 8 claims: checkable facts (numbers, dates, definitions, causes, properties). Each statement must make sense on its own.
+- 0 to 6 claims: checkable facts (numbers, dates, definitions, causes, properties). Each statement must make sense on its own.
 - Never invent facts not in the passage.
+- Keep it compact: no extra fields, no repetition. Shorter output is better.
 TXT;
 
     public function __construct(private Ollama $llm) {}

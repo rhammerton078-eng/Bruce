@@ -882,6 +882,10 @@ async function openSettings() {
     <label class="fld">Embedding model <select class="select" id="setEmbed">${opt(s.ollama.embed_model, o.models)}</select><span class="muted" style="font-size:11.5px">Changing this later requires re-processing existing sources.</span></label>
     <label class="fld">Vision model (image understanding) <select class="select" id="setVision"><option value="">Disabled</option>${opt(s.ollama.vision_model, o.models)}</select></label>
     <label class="fld">Sources per answer <input class="input" type="number" min="3" max="20" id="setTopK" value="${esc(s.retrieval.top_k)}"></label>
+    <div class="card"><h4>Speed</h4>
+      <label class="fld">AI working memory <select class="select" id="setCtx">${[[4096, '4096 · fastest, shorter answers'], [6144, '6144 · best for a 6 GB graphics card'], [8192, '8192 · standard'], [16384, '16384 · 12 GB+ graphics card']].map(([v, t]) => `<option value="${v}" ${+s.ollama.num_ctx === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="setEmbedCpu" ${['1', 'true', true].includes(s.ollama.embed_on_cpu) ? 'checked' : ''}> Run the search model on the CPU (leaves graphics memory for Mnemo)</label>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">Graphics card with 6 GB: choose 6144 and tick the box, so Mnemo runs 100% on the GPU. Check with <code>ollama ps</code>.</div></div>
     <div class="card"><h4>Optional tools</h4><dl class="kv"><dt>pdftotext (better PDFs)</dt><dd>${s.tools.pdftotext ? '<span class="badge ok">found</span>' : '<span class="badge">not found</span>'}</dd><dt>Tesseract (OCR)</dt><dd>${s.tools.tesseract ? '<span class="badge ok">found</span>' : '<span class="badge">not found</span>'}</dd>
       <dt>ffmpeg (audio/video)</dt><dd>${s.tools.ffmpeg ? '<span class="badge ok">found</span>' : '<span class="badge">not found</span>'}</dd>
       <dt>Whisper + model (transcription)</dt><dd>${s.tools.whisper && s.tools.whisper_model ? '<span class="badge ok">ready</span>' : '<span class="badge">not set</span>'}</dd>
@@ -893,7 +897,7 @@ async function openSettings() {
 }
 $('#btnSettings').onclick = openSettings;
 $('#settingsSave').onclick = async () => {
-  await api('settings_save', {ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, retrieval_top_k: $('#setTopK').value});
+  await api('settings_save', {ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, ollama_num_ctx: $('#setCtx').value, ollama_embed_on_cpu: $('#setEmbedCpu').checked ? '1' : '0', retrieval_top_k: $('#setTopK').value});
   $('#settingsModal').classList.remove('show'); toast('Settings saved', 'ok'); refreshStatus();
 };
 
