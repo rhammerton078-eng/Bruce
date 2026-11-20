@@ -183,7 +183,7 @@ storage/                 uploads/, inbox/, backups/, cards/ (one folder per extr
 
 ## Presentation & lab backups
 
-- `docs/presentation/ATLAS-Batuto-Format-UPDATED.pdf` (and `.pptx`): the 34-slide title-hearing deck, including the
+- `docs/presentation/ATLAS-Batuto-Format-v3.pdf` (and `.pptx`): the 42-slide title-hearing deck (with Download My AI and the Batuto AI software), including the
   "System Features at a Glance" full-screen section. The added slides are in `docs/presentation/new-slides/`.
 - `telegram/`: `ATLAS Restore from Telegram.bat` rebuilds the AI on a Deep Freeze lab PC from the files kept in Telegram
   (model parts + Ollama), and `TELEGRAM-CHECKLIST.txt` lists what to keep there. Eject a memory card before every shutdown.
