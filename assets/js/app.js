@@ -881,7 +881,7 @@ const sysView = {log: 'learner', timer: null};
 async function refreshSystem(withLogs) {
   let st;
   try { st = await api('system', withLogs ? {logs: 1} : {}); }
-  catch { st = {ai: {ok: S.status?.ollama?.online, text: ''}, memory: {ok: false, text: 'Not reachable'}, learner: {ok: false, text: 'Unknown'}}; }
+  catch { st = {ai: {ok: false, text: 'Unknown (ATLAS cannot reach its memory)'}, memory: {ok: false, text: 'Not reachable: start ATLAS with the desktop shortcut'}, learner: {ok: false, text: 'Unknown'}}; }
   const learnerClass = st.learner.ok ? 'ok' : (S.processing ? 'warn' : '');
   $$('#sbSys [data-sys]').forEach(d => { const k = d.dataset.sys; d.className = 'dot ' + (k === 'learner' ? learnerClass : st[k].ok ? 'ok' : 'bad'); });
   $('#sbSys').title = `AI: ${st.ai.text}\nMemory: ${st.memory.text}\nLearner: ${st.learner.ok ? st.learner.text : (S.processing ? 'this tab is learning' : st.learner.text)}\n\nClick for details and logs`;
@@ -938,6 +938,7 @@ async function refreshStatus() {
     renderIdentity(S.status);
   } catch (e) {
     $('#mnemoStatus').innerHTML = `<span class="dot bad"></span><span>Server error</span>`; $('#mnemoStatus').title = e.message;
+    refreshSystem();
   }
 }
 $('#mnemoStatus').onclick = openSettings;
