@@ -156,9 +156,12 @@ final class Package
         $copyFrom = $build ? 75 : 3; $copyTo = 98;
         try {
             $folder = $job['dest'] . DIRECTORY_SEPARATOR . $job['name'] . ' - Setup';
-            if (is_dir($folder)) $folder .= ' ' . date('Y-m-d His');
             $pkg = $folder . DIRECTORY_SEPARATOR . 'mnemo-package';
-            if (!mkdir($pkg, 0777, true)) throw new RuntimeException("Cannot create $folder");
+            // Same name again: replace the earlier download in place (no extra dated copies filling the drive)
+            if (is_dir($folder)) {
+                foreach (array_merge(glob($folder . '/ATLAS-Setup*') ?: [], glob($pkg . '/*') ?: [], [$folder . '/READ ME FIRST.txt']) as $old) if (is_file($old)) @unlink($old);
+            }
+            if (!is_dir($pkg) && !mkdir($pkg, 0777, true)) throw new RuntimeException("Cannot create $folder");
             $save(['folder' => $folder, 'pct' => 1, 'msg' => 'Saving the memory (what it has learned)…']);
 
             // 1. Memory + name
