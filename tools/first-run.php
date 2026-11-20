@@ -56,9 +56,10 @@ try {
 if (PHP_OS_FAMILY === 'Windows') {
     $root = realpath(__DIR__ . '/../../../..');          // C:\ATLAS  (xampp\htdocs\atlas\tools -> up 4)
     $safe = preg_replace('/[\\\\\/:*?"<>|]/', '', $name);
+    $target = is_file($root . '\\ATLAS.exe') ? $root . '\\ATLAS.exe' : $root . '\\Start ATLAS.bat';
     $ps = '$d=[Environment]::GetFolderPath(\'CommonDesktopDirectory\');'
         . '$s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d \'' . str_replace("'", "''", $safe) . '.lnk\'));'
-        . '$s.TargetPath=\'' . $root . '\\Start ATLAS.bat\';$s.WorkingDirectory=\'' . $root . '\';$s.IconLocation=\'' . $root . '\\atlas.ico\';$s.Save();'
+        . '$s.TargetPath=\'' . $target . '\';$s.WorkingDirectory=\'' . $root . '\';$s.IconLocation=\'' . $root . '\\atlas.ico\';$s.Save();'
         . 'Remove-Item (Join-Path $d \'ATLAS - Mnemo AI.lnk\') -ErrorAction SilentlyContinue';
     @shell_exec('powershell -NoProfile -Command "' . str_replace('"', '\"', $ps) . '"');
 }

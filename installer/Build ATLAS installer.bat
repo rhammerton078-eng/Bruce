@@ -78,6 +78,22 @@ copy /Y "%HERE%Stop ATLAS.bat" "%STAGE%\" >nul
 copy /Y "%A%\assets\atlas.ico" "%STAGE%\" >nul
 copy /Y "%A%\NOTICE.txt" "%STAGE%\" >nul
 
+echo   Making the desktop app (its own window, no browser) ...
+set "WV=%BUILD%\webview2"
+if not exist "%WV%\lib\net462\Microsoft.Web.WebView2.WinForms.dll" (
+  mkdir "%WV%" 2>nul
+  curl -L -s --fail -o "%WV%\webview2.zip" "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2"
+  tar -xf "%WV%\webview2.zip" -C "%WV%" 2>nul
+)
+set "CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+if exist "%WV%\lib\net462\Microsoft.Web.WebView2.WinForms.dll" if exist "%CSC%" (
+  copy /Y "%WV%\lib\net462\Microsoft.Web.WebView2.Core.dll" "%STAGE%\" >nul
+  copy /Y "%WV%\lib\net462\Microsoft.Web.WebView2.WinForms.dll" "%STAGE%\" >nul
+  copy /Y "%WV%\runtimes\win-x64\native\WebView2Loader.dll" "%STAGE%\" >nul
+  "%CSC%" /nologo /target:winexe /platform:x64 /optimize /win32icon:"%A%\assets\atlas.ico" /out:"%STAGE%\ATLAS.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:"%STAGE%\Microsoft.Web.WebView2.Core.dll" /r:"%STAGE%\Microsoft.Web.WebView2.WinForms.dll" "%HERE%app\AtlasApp.cs"
+)
+if exist "%STAGE%\ATLAS.exe" ( echo   [ok] ATLAS.exe ) else ( echo   [!] Desktop app could not be made ^(no internet?^). The installer opens ATLAS in an app window instead. )
+
 echo   [5/5] Copying the AI (Ollama + models, about 12 GB) ...
 robocopy "%SRC_AI%\ollama" "%STAGE%\ollama" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%SRC_AI%\models" "%STAGE%\models" /E /NFL /NDL /NJH /NJS /NP >nul

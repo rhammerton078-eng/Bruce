@@ -5,6 +5,11 @@
 #endif
 #define AppName "ATLAS - Mnemo AI"
 #define AppVersion "1.0.0"
+#if FileExists(Stage + "\ATLAS.exe")
+  #define Launch "ATLAS.exe"
+#else
+  #define Launch "Start ATLAS.bat"
+#endif
 
 [Setup]
 AppId={{6E7A1C52-9B1D-4E0B-A7F3-5C2D8E4B9A61}
@@ -36,6 +41,10 @@ Source: "{#Stage}\Start ATLAS.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Stage}\Stop ATLAS.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Stage}\atlas.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Stage}\NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Stage}\ATLAS.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Stage}\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Stage}\Microsoft.Web.WebView2.WinForms.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Stage}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#Stage}\xampp\*"; DestDir: "{app}\xampp"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Stage}\ollama\*"; DestDir: "{app}\ollama"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; "Download my AI": the memory and the name sit next to ATLAS-Setup.exe and are picked up at install time
@@ -45,12 +54,12 @@ Source: "{src}\mnemo-package\identity.json"; DestDir: "{app}\package"; Flags: ex
 Source: "{#Stage}\models\*"; DestDir: "{app}\models"; Flags: ignoreversion recursesubdirs createallsubdirs nocompression
 
 [Icons]
-Name: "{autoprograms}\ATLAS - Mnemo AI"; Filename: "{app}\Start ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"
+Name: "{autoprograms}\ATLAS - Mnemo AI"; Filename: "{app}\{#Launch}"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"
 Name: "{autoprograms}\Stop ATLAS"; Filename: "{app}\Stop ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"
-Name: "{autodesktop}\ATLAS - Mnemo AI"; Filename: "{app}\Start ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"; Tasks: desktopicon
+Name: "{autodesktop}\ATLAS - Mnemo AI"; Filename: "{app}\{#Launch}"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Start ATLAS.bat"; Description: "Start ATLAS now"; Flags: postinstall nowait skipifsilent shellexec
+Filename: "{app}\{#Launch}"; Description: "Open it now"; Flags: postinstall nowait skipifsilent shellexec
 
 [UninstallRun]
 Filename: "{app}\Stop ATLAS.bat"; Flags: runhidden waituntilterminated; RunOnceId: "StopAtlas"

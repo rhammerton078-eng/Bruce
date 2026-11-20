@@ -52,6 +52,9 @@ REM First start: database, the memory that came with it, and the AI's name
 REM Background learner (one at a time; it exits by itself if one is already running)
 powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\php\php.exe' -ArgumentList 'worker\ingest.php','--watch' -WorkingDirectory '%APP%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\worker-out.log' -RedirectStandardError '%LOGS%\worker-err.log'"
 
+REM Started by the ATLAS app window: it shows ATLAS itself
+if /I "%~1"=="nobrowser" exit /b 0
+
 for /L %%i in (1,1,40) do (
   curl -s -o NUL -m 2 %URL%setup.php && goto :open
   timeout /t 1 >NUL
