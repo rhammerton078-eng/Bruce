@@ -248,7 +248,7 @@ $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
     <span class="sb sb-storage" id="sbStorage" title="Database size / free disk"></span>
     <span class="grow"></span>
     <span class="sb" id="sbWork"><span class="dot"></span><span>Idle</span></span>
-    <span class="sb"><div class="progress"><i id="sbProg"></i></div></span>
+    <span class="sb sb-prog" id="sbProgWrap" hidden><div class="progress"><i id="sbProg"></i></div><b id="sbPct">0%</b><span id="sbEta" class="muted"></span></span>
     <span class="sb" id="sbModel"></span>
   </footer>
 </div>

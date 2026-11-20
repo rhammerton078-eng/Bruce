@@ -817,29 +817,61 @@ function uploadFiles(files) {
 function setWork(text, busy) {
   $('#sbWork').innerHTML = `<span class="dot ${busy ? 'warn pulse' : ''}"></span><span>${esc(text || 'Idle')}</span>`;
 }
+// Percent bar: learning = passages read in the files being learned; fact-checking = claims checked
+const prog = {phase: '', t0: 0, left0: 0};
+function renderProgress(p, note) {
+  p = p || {};
+  const learnLeft = (p.chunks_left || 0) + (p.embed_left || 0);
+  let phase = '', pct = 100, left = 0, label = '';
+  if (learnLeft || p.queued) {
+    phase = 'learn'; left = learnLeft;
+    const total = (p.chunks_total || 0) + (p.embed_left && !p.chunks_left ? p.embed_left : 0);
+    pct = total ? Math.floor((1 - Math.min(learnLeft, total) / total) * 100) : 0;
+    label = `Learning… ${learnLeft} passage${learnLeft === 1 ? '' : 's'} left${p.queued ? ` · ${p.queued} file${p.queued === 1 ? '' : 's'} waiting` : ''}`;
+  } else if (p.claims_left) {
+    phase = 'check'; left = p.claims_left;
+    pct = p.claims_total ? Math.floor((1 - p.claims_left / p.claims_total) * 100) : 0;
+    label = `Fact-checking… ${p.claims_left} claim${p.claims_left === 1 ? '' : 's'} left`;
+  }
+  const wrap = $('#sbProgWrap');
+  if (!phase) { prog.phase = ''; wrap.hidden = true; setWork(); return; }
+  // Time estimate from how fast "left" goes down
+  const now = Date.now();
+  if (prog.phase !== phase || left > prog.left0) { prog.phase = phase; prog.t0 = now; prog.left0 = left; }
+  let eta = '';
+  const done = prog.left0 - left, secs = (now - prog.t0) / 1000;
+  if (done > 0 && secs > 20) {
+    const mins = Math.round(left / (done / secs) / 60);
+    eta = mins < 1 ? '· under a minute' : mins < 90 ? `· about ${mins} min left` : `· about ${Math.round(mins / 60)} h left`;
+  }
+  wrap.hidden = false;
+  $('#sbProg').style.width = Math.max(2, Math.min(100, pct)) + '%';
+  $('#sbPct').textContent = Math.min(99, pct) + '%';
+  $('#sbEta').textContent = eta;
+  setWork(note ? `${label} (${note})` : label, true);
+}
 async function kickProcessing(manual) {
   if (S.processing) return;
   S.processing = true;
   let completedAny = false, lastGraphRefresh = Date.now();
   try {
     for (;;) {
-      const p = S.status?.pending || {};
-      setWork(p.chunks_left || p.queued || p.embed_left ? `Learning… ${p.queued ? p.queued + ' queued · ' : ''}${(p.chunks_left || 0) + (p.embed_left || 0)} passages left` : `Fact-checking… ${p.claims_left || 0} claims left`, true);
+      renderProgress(S.status?.pending);
       const r = await api('process', {budget: 15});
       S.status && (S.status.pending = r.pending);
       r.errors.forEach(e => toast(esc(e), 'bad'));
       if (r.completed.length) { completedAny = true; toast('Learned: ' + r.completed.map(esc).join(', '), 'ok'); loadTree(); }
       const total = (r.pending.chunks_left || 0) + (r.pending.queued || 0) + (r.pending.embed_left || 0) + (r.pending.claims_left || 0);
-      $('#sbProg').style.width = total ? Math.max(5, 100 - Math.min(95, total)) + '%' : '100%';
+      renderProgress(r.pending, r.busy ? 'background worker' : '');
       if (Date.now() - lastGraphRefresh > 20000 && S.view === 'graph') { loadGraph(); lastGraphRefresh = Date.now(); }
       if (S.view === 'documents') loadDocuments();
       if (!total) break;
       if (r.errors.some(e => /unreachable/i.test(e))) { toast('Mnemo can\'t reach Ollama. Start Ollama, then click "Process queue".', 'bad'); break; }
-      if (r.busy) { setWork('Learning in the background worker…', true); await new Promise(res => setTimeout(res, 8000)); continue; }
+      if (r.busy) { await new Promise(res => setTimeout(res, 8000)); continue; }
       if (!r.extracted_chunks && !r.parsed.length && !r.completed.length && !r.embedded && !r.checked_claims) break;
     }
   } catch (e) { toast('Processing stopped: ' + esc(e.message), 'bad'); }
-  S.processing = false; setWork(); setTimeout(() => $('#sbProg').style.width = '0', 1500);
+  S.processing = false; renderProgress(null);
   refreshStatus();
   if (completedAny || manual) { loadGraph(); if (S.view === 'documents') loadDocuments(); setTimeout(() => { if (!S.selectedId && $('#inspTitle').textContent === 'Overview') showOverview(); }, 600); }
 }

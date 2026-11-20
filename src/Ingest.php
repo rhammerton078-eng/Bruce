@@ -71,6 +71,10 @@ final class Ingest
             'chunks_left' => (int)$this->db->val("SELECT COUNT(*) FROM chunks c JOIN documents d ON d.id = c.document_id WHERE d.status = 'processing' AND c.extracted = 0"),
             'claims_left' => (int)$this->db->val('SELECT COUNT(*) FROM claims WHERE checked = 0'),
             'embed_left' => (int)$this->db->val('SELECT COUNT(*) FROM chunks c LEFT JOIN chunk_embeddings e ON e.chunk_id = c.id WHERE e.chunk_id IS NULL'),
+            // Totals for the percent bar
+            'chunks_total' => (int)$this->db->val("SELECT COUNT(*) FROM chunks c JOIN documents d ON d.id = c.document_id WHERE d.status = 'processing'"),
+            'claims_total' => (int)$this->db->val('SELECT COUNT(*) FROM claims'),
+            'embed_total' => (int)$this->db->val('SELECT COUNT(*) FROM chunks'),
         ];
     }
 
