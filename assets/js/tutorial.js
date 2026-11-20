@@ -237,7 +237,7 @@ async function openHub(welcome = false) {
   $('#tutHubBody').innerHTML = `
     <div class="modal-h"><span style="display:flex;gap:8px;align-items:center">${icon('school')}Learn ATLAS</span><button class="btn ghost sm icon" data-close>${icon('x', 'sm')}</button></div>
     <div class="modal-b" style="gap:16px">
-      ${welcome ? `<div class="tut-welcome"><div class="orb">${icon('sparkle')}</div><div><b>Welcome! I'm Mnemo.</b><br>I start with zero knowledge and learn from everything you teach me, offline, stored in your own MySQL database. Let me show you around.</div></div>` : ''}
+      ${welcome ? `<div class="tut-welcome"><div class="orb"><img src="assets/icon.svg" alt="Mnemo"></div><div><b>Welcome! I'm Mnemo.</b><br>I start with zero knowledge and learn from everything you teach me, offline, stored in your own MySQL database. Let me show you around.</div></div>` : ''}
       <div class="tut-top">
         <div class="tut-ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" stroke="var(--panel-3)"/><circle cx="32" cy="32" r="26" stroke="var(--accent)" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct / 100)}" transform="rotate(-90 32 32)"/></svg><b>${pct}%</b></div>
         <div style="flex:1"><div style="font-weight:600;font-size:15px">${pct === 100 ? 'You\'re an ATLAS expert 🎓' : pct === 0 ? 'Start here' : 'Keep going!'}</div>

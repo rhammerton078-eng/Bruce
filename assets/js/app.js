@@ -549,7 +549,7 @@ function md(text, sources) {
 
 function chatEmpty() {
   $('#chatInner').innerHTML = `<div class="chat-empty">
-    <div class="orb">${icon('sparkle')}</div><h3>Hi, I'm Mnemo</h3>
+    <div class="orb"><img src="assets/icon.svg" alt="Mnemo"></div><h3>Hi, I'm Mnemo</h3>
     <div>I answer only from what you've taught me, and I always show my sources.</div>
     <div class="suggest">
       <div class="card" data-q="Give me an overview of everything I've uploaded so far."><b>Overview</b>Summarize my knowledge base</div>
