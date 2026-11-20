@@ -472,3 +472,17 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--
 .pv-sub{font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
 .pv-side{overflow:auto;padding:12px}
 @media (max-width:900px){.pv-body{grid-template-columns:1fr}.pv-view{border-right:0;border-bottom:1px solid var(--line);min-height:50vh}}
+
+/* Background parts (status bar + window) */
+.statusbar .sb-sys{background:none;border:1px solid var(--line);border-radius:7px;padding:2px 8px;color:var(--text-2);font:inherit;cursor:pointer;gap:5px}
+.statusbar .sb-sys:hover{border-color:var(--line-2);color:var(--text)}
+.statusbar .sb-sys .dot{margin-left:4px}
+.sys{width:min(980px,94vw)}
+.sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sys-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel-2)}
+.sys-card h4{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px}
+.sys-card .big{font-size:15px;font-weight:600;color:var(--text)}
+.sys-card .muted{font-size:12px}
+.sys-log{margin-top:10px;background:#05070b;border:1px solid var(--line);border-radius:8px;padding:10px;font:11.5px/1.45 var(--mono);color:#b9c4d6;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.sys-tabs{display:flex;gap:6px;margin-top:14px}
+@media (max-width:800px){.sys-grid{grid-template-columns:1fr}}

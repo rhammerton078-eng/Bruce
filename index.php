@@ -249,6 +249,7 @@ $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
     <span class="grow"></span>
     <span class="sb" id="sbWork"><span class="dot"></span><span>Idle</span></span>
     <span class="sb sb-prog" id="sbProgWrap" hidden><div class="progress"><i id="sbProg"></i></div><b id="sbPct">0%</b><span id="sbEta" class="muted"></span></span>
+    <button class="sb sb-sys" id="sbSys" title="Background parts: click for details and logs"><span class="dot" data-sys="ai"></span>AI<span class="dot" data-sys="memory"></span>Memory<span class="dot" data-sys="learner"></span>Learner</button>
     <span class="sb" id="sbModel"></span>
   </footer>
 </div>

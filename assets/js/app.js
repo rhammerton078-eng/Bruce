@@ -876,6 +876,51 @@ async function kickProcessing(manual) {
   if (completedAny || manual) { loadGraph(); if (S.view === 'documents') loadDocuments(); setTimeout(() => { if (!S.selectedId && $('#inspTitle').textContent === 'Overview') showOverview(); }, 600); }
 }
 
+// ---------------------------------------------------------------- background parts (AI · Memory · Learner)
+const sysView = {log: 'learner', timer: null};
+async function refreshSystem(withLogs) {
+  let st;
+  try { st = await api('system', withLogs ? {logs: 1} : {}); }
+  catch { st = {ai: {ok: S.status?.ollama?.online, text: ''}, memory: {ok: false, text: 'Not reachable'}, learner: {ok: false, text: 'Unknown'}}; }
+  const learnerClass = st.learner.ok ? 'ok' : (S.processing ? 'warn' : '');
+  $$('#sbSys [data-sys]').forEach(d => { const k = d.dataset.sys; d.className = 'dot ' + (k === 'learner' ? learnerClass : st[k].ok ? 'ok' : 'bad'); });
+  $('#sbSys').title = `AI: ${st.ai.text}\nMemory: ${st.memory.text}\nLearner: ${st.learner.ok ? st.learner.text : (S.processing ? 'this tab is learning' : st.learner.text)}\n\nClick for details and logs`;
+  return st;
+}
+function sysEnsure() {
+  let m = $('#sysModal'); if (m) return m;
+  m = document.createElement('div'); m.className = 'modal-bg'; m.id = 'sysModal';
+  m.innerHTML = '<div class="modal sys"><div class="modal-h"><span style="display:flex;gap:8px;align-items:center">' + icon('cpu', 'sm') + 'Background parts</span><button class="btn ghost sm icon" data-close>' + icon('x', 'sm') + '</button></div><div class="modal-b" id="sysBody"></div></div>';
+  document.body.appendChild(m);
+  const hide = () => { m.classList.toggle('show', false); clearInterval(sysView.timer); };
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) hide(); });
+  return m;
+}
+async function openSystem() {
+  sysEnsure().classList.add('show');
+  const draw = async () => {
+    const st = await refreshSystem(true);
+    const ai = st.ai, mem = st.memory, ln = st.learner;
+    const card = (title, ok, big, sub) => `<div class="sys-card"><h4><span class="dot ${ok}"></span>${title}</h4><div class="big">${esc(big)}</div><div class="muted">${sub}</div></div>`;
+    const models = (ai.loaded || []).map(l => `${esc(l.name)}: <b>${esc(l.where)}</b>`).join('<br>') || (ai.ok ? 'No model loaded right now (it wakes up when needed).' : '');
+    const lnOk = ln.ok ? 'ok' : (S.processing ? 'warn' : 'bad');
+    $('#sysBody').innerHTML = `
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px">These run hidden in the background, so they don't fill your taskbar. Green = working.</div>
+      <div class="sys-grid">
+        ${card('AI (Ollama)', ai.ok ? 'ok' : 'bad', ai.ok ? ai.model + ' · ' + ai.text : 'Not running', ai.ok ? 'Version ' + esc(ai.version) + '<br>' + models : 'Start ATLAS again with the desktop shortcut.')}
+        ${card('Memory (MySQL)', mem.ok ? 'ok' : 'bad', mem.text, mem.ok ? esc(mem.version) : 'Start ATLAS again with the desktop shortcut.')}
+        ${card('Learner (background)', lnOk, ln.ok ? ln.text : (S.processing ? 'This tab is learning' : ln.text), ln.ok ? (esc(ln.last) || 'Running') + (ln.pid ? '<br>Process ' + ln.pid : '') : esc(ln.hint || ''))}
+      </div>
+      <div class="sys-tabs">${[['learner', 'Learner log'], ['ai', 'AI log'], ['memory', 'Memory log']].map(([k, t]) => `<button class="btn sm ${sysView.log === k ? 'primary' : 'ghost'}" data-log="${k}">${t}</button>`).join('')}</div>
+      <pre class="sys-log" id="sysLog">${esc((st.logs || {})[sysView.log] || 'No log yet. Logs appear after ATLAS is started with the desktop shortcut.')}</pre>`;
+    $$('#sysBody [data-log]').forEach(b => b.onclick = () => { sysView.log = b.dataset.log; draw(); });
+    const pre = $('#sysLog'); pre.scrollTop = pre.scrollHeight;
+  };
+  await draw();
+  clearInterval(sysView.timer); sysView.timer = setInterval(() => { if ($('#sysModal').classList.contains('show')) draw(); }, 5000);
+}
+$('#sbSys').onclick = openSystem;
+
 // ---------------------------------------------------------------- status
 async function refreshStatus() {
   try {
@@ -888,6 +933,7 @@ async function refreshStatus() {
     $('#sbModel').innerHTML = o.online ? `${icon('cpu', 'sm')} ${esc(o.chat.name)}` : '';
     if (!S.processing && (S.status.pending.queued || S.status.pending.chunks_left || S.status.pending.embed_left || S.status.pending.claims_left) && ok) kickProcessing();
     renderStorageStatus(S.status.storage);
+    refreshSystem();
     renderBadges(S.status.badges);
     renderIdentity(S.status);
   } catch (e) {

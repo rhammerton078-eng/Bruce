@@ -18,3 +18,8 @@ storage/*.log
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# Background learner state and logs
+storage/logs/
+storage/worker.json
+storage/worker.lock

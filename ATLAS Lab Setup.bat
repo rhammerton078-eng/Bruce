@@ -59,11 +59,13 @@ if errorlevel 1 (
 ) else ( echo   [ok] NVIDIA graphics card: the AI runs on the GPU )
 :gpudone
 
-REM --- 3. Start Ollama ----------------------------------------------------
+REM --- 3. Start Ollama (hidden: no window on the taskbar; ATLAS shows its status) --
+set "LOGS=%APP%\storage\logs"
+mkdir "%LOGS%" 2>nul
 taskkill /IM "ollama app.exe" /F >nul 2>&1
 taskkill /IM ollama.exe /F >nul 2>&1
 timeout /t 2 >nul
-start "ATLAS Ollama" /MIN "%AI%\ollama\ollama.exe" serve
+powershell -NoProfile -Command "Start-Process -FilePath '%AI%\ollama\ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\ollama-out.log' -RedirectStandardError '%LOGS%\ollama.log'"
 timeout /t 5 >nul
 
 REM --- 4. Models (download only the missing ones) -------------------------
@@ -79,13 +81,16 @@ del "%TEMP%\atlas_models.txt" >nul 2>&1
 
 REM --- 5. School XAMPP: Apache + MySQL (port 3306) ------------------------
 netstat -ano | findstr /R /C:":3306 .*LISTENING" >NUL
-if errorlevel 1 ( echo   Starting MySQL... & start "ATLAS MySQL" /MIN /D "%XAMPP%" mysql_start.bat ) else ( echo   [ok] MySQL running )
+if errorlevel 1 ( echo   Starting MySQL... & powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\mysql\bin\mysqld.exe' -ArgumentList '--defaults-file=%XAMPP%\mysql\bin\my.ini','--standalone' -WorkingDirectory '%XAMPP%' -WindowStyle Hidden" ) else ( echo   [ok] MySQL running )
 netstat -ano | findstr /R /C:":80 .*LISTENING" >NUL
-if errorlevel 1 ( echo   Starting Apache... & start "ATLAS Apache" /MIN /D "%XAMPP%" apache_start.bat ) else ( echo   [ok] Apache running )
+if errorlevel 1 ( echo   Starting Apache... & powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\apache\bin\httpd.exe' -WorkingDirectory '%XAMPP%' -WindowStyle Hidden" ) else ( echo   [ok] Apache running )
 
-REM --- 6. Background learner ---------------------------------------------
+REM --- 6. Background learner (hidden; log in storage\logs\worker.log) --------
 taskkill /FI "WINDOWTITLE eq ATLAS worker*" /F >nul 2>&1
-start "ATLAS worker" /MIN /D "%APP%" "%XAMPP%\php\php.exe" worker\ingest.php --watch
+if exist "%APP%\storage\worker.json" powershell -NoProfile -Command "$j = Get-Content '%APP%\storage\worker.json' -Raw | ConvertFrom-Json; $p = Get-Process -Id $j.pid -ErrorAction SilentlyContinue; if ($p -and $p.ProcessName -eq 'php') { Stop-Process -Id $j.pid -Force }"
+timeout /t 1 >nul
+powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\php\php.exe' -ArgumentList 'worker\ingest.php','--watch' -WorkingDirectory '%APP%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\worker-out.log' -RedirectStandardError '%LOGS%\worker-err.log'"
+echo   [ok] AI, memory and learner run hidden. Their status: ATLAS status bar ^> AI / Memory / Learner
 
 REM --- 7. Open ATLAS (setup page if the database is not installed yet) ----
 echo   Waiting for ATLAS...
@@ -94,13 +99,12 @@ for /L %%i in (1,1,30) do (
   timeout /t 1 >NUL
 )
 :open
-start "" %URL%setup.php
+REM index.php opens the setup page by itself when the database is not installed yet
+start "" %URL%
 echo.
 echo   -------------------------------------------------------------
-echo   Done. On the setup page: "Install database" (first time this session),
-echo   then Open ATLAS and Insert your .atlascard to restore Mnemo's memory.
-echo.
-echo   TIP: copy %AI% to a USB drive as  X:\ATLAS-AI  - next time this
-echo        script uses it and downloads nothing.
+echo   Done. ATLAS is open in your browser.
+echo   First time on this PC: "Install database", then Insert your .atlascard.
+echo   This window closes by itself.
 echo   -------------------------------------------------------------
-pause
+timeout /t 15

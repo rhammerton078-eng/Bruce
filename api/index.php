@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use Atlas\{Cards, Db, Graph, Growth, Ingest, Insights, Maintenance, Media, Mnemo, Nightly, Ollama, Practice, Quality, Truth, Tutorial, Vector};
+use Atlas\{Cards, Db, Graph, Growth, Ingest, Insights, Maintenance, Media, Mnemo, Nightly, Ollama, Practice, Quality, System, Truth, Tutorial, Vector};
 
 $action = $_GET['action'] ?? '';
 @set_time_limit(900); // slow CPUs: AI answers can take minutes
@@ -314,6 +314,10 @@ try {
         case 'nightly':
             session_write_close();
             json_out((new Nightly())->run());
+
+        case 'system':
+            session_write_close();
+            json_out(System::status((bool)$in('logs', false)));
 
         case 'settings':
             $cfg = atlas_config();
