@@ -965,19 +965,32 @@ async function openSystem() {
   const draw = async () => {
     const st = await refreshSystem(true);
     const ai = st.ai, mem = st.memory, ln = st.learner;
-    const card = (title, ok, big, sub) => `<div class="sys-card"><h4><span class="dot ${ok}"></span>${title}</h4><div class="big">${esc(big)}</div><div class="muted">${sub}</div></div>`;
+    const btns = (part, on) => `<div class="sys-btns">${on
+        ? `<button class="btn sm" data-svc="${part}" data-do="restart">${icon('refresh', 'sm')}Restart</button><button class="btn sm danger" data-svc="${part}" data-do="stop">Stop</button>`
+        : `<button class="btn sm primary" data-svc="${part}" data-do="start">Start</button>`}</div>`;
+    const card = (title, ok, big, sub, part) => `<div class="sys-card"><h4><span class="dot ${ok}"></span>${title}</h4><div class="big">${esc(big)}</div><div class="muted">${sub}</div>${btns(part, ok === 'ok')}</div>`;
     const models = (ai.loaded || []).map(l => `${esc(l.name)}: <b>${esc(l.where)}</b>`).join('<br>') || (ai.ok ? 'No model loaded right now (it wakes up when needed).' : '');
     const lnOk = ln.ok ? 'ok' : (S.processing ? 'warn' : 'bad');
     $('#sysBody').innerHTML = `
       <div class="muted" style="font-size:12.5px;margin-bottom:10px">These run hidden in the background, so they don't fill your taskbar. Green = working.</div>
       <div class="sys-grid">
-        ${card('AI (Ollama)', ai.ok ? 'ok' : 'bad', ai.ok ? ai.model + ' · ' + ai.text : 'Not running', ai.ok ? 'Version ' + esc(ai.version) + '<br>' + models : 'Start ATLAS again with the desktop shortcut.')}
-        ${card('Memory (MySQL)', mem.ok ? 'ok' : 'bad', mem.text, mem.ok ? esc(mem.version) : 'Start ATLAS again with the desktop shortcut.')}
-        ${card('Learner (background)', lnOk, ln.ok ? ln.text : (S.processing ? 'This tab is learning' : ln.text), ln.ok ? (esc(ln.last) || 'Running') + (ln.pid ? '<br>Process ' + ln.pid : '') : esc(ln.hint || ''))}
+        ${card('AI (Ollama)', ai.ok ? 'ok' : 'bad', ai.ok ? ai.model + ' · ' + ai.text : 'Not running', ai.ok ? 'Version ' + esc(ai.version) + '<br>' + models : 'Click Start.', 'ai')}
+        ${card('Memory (MySQL)', mem.ok ? 'ok' : 'bad', mem.text, mem.ok ? esc(mem.version) + '<br><span style="color:var(--warn)">Stopping it pauses ATLAS until you start it again.</span>' : 'Click Start. ATLAS works again a few seconds later.', 'memory')}
+        ${card('Learner (background)', lnOk, ln.ok ? ln.text : (S.processing ? 'This tab is learning' : ln.text), ln.ok ? (esc(ln.last) || 'Running') + (ln.pid ? '<br>Process ' + ln.pid : '') : esc(ln.hint || ''), 'learner')}
       </div>
       <div class="sys-tabs">${[['learner', 'Learner log'], ['ai', 'AI log'], ['memory', 'Memory log']].map(([k, t]) => `<button class="btn sm ${sysView.log === k ? 'primary' : 'ghost'}" data-log="${k}">${t}</button>`).join('')}</div>
       <pre class="sys-log" id="sysLog">${esc((st.logs || {})[sysView.log] || 'No log yet. Logs appear after ATLAS is started with the desktop shortcut.')}</pre>`;
     $$('#sysBody [data-log]').forEach(b => b.onclick = () => { sysView.log = b.dataset.log; draw(); });
+    $$('#sysBody [data-svc]').forEach(b => b.onclick = async () => {
+      const part = b.dataset.svc, what = b.dataset.do;
+      if (part === 'memory' && what === 'stop' && !confirm('Stop the memory (MySQL)? ATLAS pauses until you click Start again.')) return;
+      $$('#sysBody [data-svc]').forEach(x => x.disabled = true);
+      b.textContent = what === 'stop' ? 'Stopping…' : what === 'start' ? 'Starting…' : 'Restarting…';
+      const label = {ai: 'AI', memory: 'Memory', learner: 'Learner'}[part];
+      try { await api('service', {part, do: what}, 'POST'); toast(label + ': ' + (what === 'stop' ? 'stopped' : 'started'), 'ok'); }
+      catch (e) { toast(esc(e.message), 'bad'); }
+      await draw(); refreshStatus();
+    });
     const pre = $('#sysLog'); pre.scrollTop = pre.scrollHeight;
   };
   await draw();
