@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
 // Not installed yet: install the database by itself (repairs leftover files); only if that fails show the setup page
-if (!Atlas\Installer::installed()) {
+if (!Atlas\Installer::installed() || Atlas\Installer::pending()) {
     try { Atlas\Installer::run(); } catch (Throwable) { header('Location: setup.php'); exit; }
 }
 atlas_migrate();

@@ -18,33 +18,19 @@ for ($i = 0; $i < 40; $i++) {
     try { Atlas\Db::server()->pdo->query('SELECT 1'); break; } catch (Throwable) { sleep(1); }
 }
 
-// 2. Install the database the first time (repairs leftover files from an earlier install)
-if (!Atlas\Installer::installed()) {
-    $say('Setting up the memory for the first time...');
-    try { Atlas\Installer::run(); } catch (Throwable $e) { $say('[!] ' . $e->getMessage()); exit(1); }
-}
-
-// 3. Memory + name from "Download my AI" (only once)
-if ($pkg === '' || !is_file("$pkg/identity.json") || is_file("$pkg/.done")) exit(0);
-$id = json_decode((string)file_get_contents("$pkg/identity.json"), true) ?: [];
-$name = trim((string)($id['ai_name'] ?? 'Mnemo')) ?: 'Mnemo';
+// 2 + 3. Database (repairs leftover files), then the memory and the name that came with it
+$hadPackage = $pkg !== '' && is_file("$pkg/identity.json") && !is_file("$pkg/.done");
 try {
-    if (is_file("$pkg/memory.atlascard")) {
-        $say("Giving $name its memory (this can take a minute)...");
-        Atlas\Cards::import("$pkg/memory.atlascard", $name);
-        Atlas\Db::reset();
-        atlas_config(true);
-    }
-    $db = Atlas\Db::get();
-    $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['app.ai_name', $name]);
-    $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['ollama.chat_model', 'mnemo:7b']);
-    if (array_key_exists('vision', $id) && !$id['vision']) $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['ollama.vision_model', '']);
-    file_put_contents("$pkg/.done", date('c'));
-    $say("[ok] $name is ready.");
+    Atlas\Installer::run();
+    $name = Atlas\Installer::importPackage($pkg);     // no-op when run() already did it
 } catch (Throwable $e) {
     $say('[!] Could not set up the memory: ' . $e->getMessage());
     exit(1);
 }
+if (!$hadPackage) exit(0);
+$id = json_decode((string)@file_get_contents("$pkg/identity.json"), true) ?: [];
+$name = trim((string)($id['ai_name'] ?? 'Mnemo')) ?: 'Mnemo';
+$say("[ok] $name is ready.");
 
 // 4. Desktop icon with the AI's name (Windows)
 if (PHP_OS_FAMILY === 'Windows') {
