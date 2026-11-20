@@ -11,11 +11,7 @@ $err = null;
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['do'] ?? '') === 'install') {
     try {
-        $sql = (string)file_get_contents(__DIR__ . '/sql/schema.sql');
-        $sql = str_replace(['CREATE DATABASE IF NOT EXISTS atlas', 'USE atlas;'], ['CREATE DATABASE IF NOT EXISTS `' . $cfg['db']['name'] . '`', 'USE `' . $cfg['db']['name'] . '`;'], $sql);
-        $pdo = Db::server()->pdo;
-        foreach (array_filter(array_map('trim', preg_split('/;\s*\n/', preg_replace('/^--.*$/m', '', $sql)))) as $stmt) $pdo->exec($stmt);
-        Atlas\Schema::ensure(true);
+        Atlas\Installer::run();   // also repairs leftover database files
         $msg = 'Database installed. You are ready to go!';
     } catch (Throwable $e) { $err = $e->getMessage(); }
 }

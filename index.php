@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
-$installed = true;
-try { Atlas\Db::get()->val('SELECT 1 FROM documents LIMIT 1'); } catch (Throwable) { $installed = false; }
-if (!$installed) { header('Location: setup.php'); exit; }
+// Not installed yet: install the database by itself (repairs leftover files); only if that fails show the setup page
+if (!Atlas\Installer::installed()) {
+    try { Atlas\Installer::run(); } catch (Throwable) { header('Location: setup.php'); exit; }
+}
 atlas_migrate();
 $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
 ?><!doctype html>

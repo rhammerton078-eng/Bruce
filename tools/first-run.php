@@ -18,23 +18,10 @@ for ($i = 0; $i < 40; $i++) {
     try { Atlas\Db::server()->pdo->query('SELECT 1'); break; } catch (Throwable) { sleep(1); }
 }
 
-// 2. Install the database the first time
-try {
-    Atlas\Db::get()->val('SELECT 1 FROM documents LIMIT 1');
-} catch (Throwable $e) {
-    if (str_contains($e->getMessage(), "doesn't exist in engine")) {
-        // Broken database files (copied while not consistent): start this database fresh
-        $say('Repairing the memory database...');
-        try { Atlas\Db::server()->pdo->exec('DROP DATABASE IF EXISTS `' . $cfg['db']['name'] . '`'); } catch (Throwable) {}
-        @unlink(is_string($pkg) && $pkg !== '' ? "$pkg/.done" : '');
-    }
+// 2. Install the database the first time (repairs leftover files from an earlier install)
+if (!Atlas\Installer::installed()) {
     $say('Setting up the memory for the first time...');
-    $sql = (string)file_get_contents(__DIR__ . '/../sql/schema.sql');
-    $sql = str_replace(['CREATE DATABASE IF NOT EXISTS atlas', 'USE atlas;'], ['CREATE DATABASE IF NOT EXISTS `' . $cfg['db']['name'] . '`', 'USE `' . $cfg['db']['name'] . '`;'], $sql);
-    $pdo = Atlas\Db::server()->pdo;
-    foreach (array_filter(array_map('trim', preg_split('/;\s*\n/', preg_replace('/^--.*$/m', '', $sql)))) as $stmt) $pdo->exec($stmt);
-    Atlas\Db::reset();
-    Atlas\Schema::ensure(true);
+    try { Atlas\Installer::run(); } catch (Throwable $e) { $say('[!] ' . $e->getMessage()); exit(1); }
 }
 
 // 3. Memory + name from "Download my AI" (only once)
