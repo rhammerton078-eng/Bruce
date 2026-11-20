@@ -70,7 +70,7 @@ timeout /t 5 >nul
 
 REM --- 4. Models (download only the missing ones) -------------------------
 "%AI%\ollama\ollama.exe" list > "%TEMP%\atlas_models.txt" 2>nul
-for %%M in (qwen2.5:7b nomic-embed-text qwen2.5vl:3b) do (
+for %%M in (qwen2.5:7b qwen2.5:1.5b nomic-embed-text qwen2.5vl:3b) do (
   findstr /B /I /C:"%%M " /C:"%%M:latest " "%TEMP%\atlas_models.txt" >nul
   if errorlevel 1 ( echo   Downloading %%M ... & "%AI%\ollama\ollama.exe" pull %%M ) else ( echo   [ok] %%M )
 )

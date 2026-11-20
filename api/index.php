@@ -29,7 +29,7 @@ if (PHP_SAPI !== 'cli' && !in_array($remote, ['127.0.0.1', '::1'], true) && !is_
 }
 $writes = ['card_create', 'card_switch', 'card_rename', 'card_remove', 'card_export', 'card_import', 'curiosity_answer', 'curiosity_skip', 'wonder', 'lesson_teach', 'lesson_exam', 'lesson_delete', 'baby_settings', 'tutorial_save', 'demo_load', 'demo_remove', 'contradiction_resolve', 'review_decide', 'merge', 'merge_undo', 'hypothesis_decide', 'truth_scan', 'golden_add', 'golden_delete', 'golden_toggle', 'golden_run',
     'self_quiz_run', 'quiz_promote', 'approved_delete', 'watch_add', 'watch_delete', 'watch_check', 'watch_read', 'card_review', 'cards_generate', 'card_delete',
-    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'package_create', 'package_cancel', 'service', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
+    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'package_create', 'package_cancel', 'model_pull', 'service', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
 if (in_array($action, $writes, true) && $method !== 'POST') json_out(['error' => 'POST required'], 405);
 
 // Background parts: status and start/stop buttons work even while the memory (MySQL) is stopped
@@ -327,6 +327,9 @@ try {
             session_write_close();
             json_out((new Nightly())->run());
 
+        case 'model_pull':
+            json_out(Services::pull((string)$in('model', '')));
+
         case 'package_info':
             json_out(Package::info());
 
@@ -335,16 +338,16 @@ try {
 
         case 'package_create':
             session_write_close();
-            json_out(Package::start((string)$in('name', ''), (string)$in('dest', '')));
+            json_out(Package::start((string)$in('name', ''), (string)$in('dest', ''), (bool)$in('vision', false)));
 
         case 'settings':
             $cfg = atlas_config();
-            json_out(['app' => $cfg['app'] ?? [], 'ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model', 'num_ctx', 'embed_on_cpu'])),
+            json_out(['app' => $cfg['app'] ?? [], 'ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model', 'num_ctx', 'embed_on_cpu', 'learn_model', 'check_while_learning'])),
                 'retrieval' => $cfg['retrieval'], 'tools' => ['pdftotext' => \Atlas\DocParser::tool('pdftotext'), 'tesseract' => \Atlas\DocParser::tool('tesseract')] + Media::tools(),
                 'vector' => Vector::nativeSupported(), 'gd' => function_exists('imagecreatefromstring')]);
 
         case 'settings_save':
-            $allowed = ['ollama.chat_model', 'ollama.embed_model', 'ollama.vision_model', 'ollama.num_ctx', 'ollama.embed_on_cpu', 'retrieval.top_k'];
+            $allowed = ['ollama.chat_model', 'ollama.embed_model', 'ollama.vision_model', 'ollama.num_ctx', 'ollama.embed_on_cpu', 'ollama.learn_model', 'ollama.check_while_learning', 'retrieval.top_k'];
             foreach ($allowed as $k) {
                 $v = $in(str_replace('.', '_', $k));
                 if ($v !== null) $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', [$k, trim((string)$v)]);

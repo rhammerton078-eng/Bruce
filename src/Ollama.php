@@ -21,6 +21,24 @@ final class Ollama
         return max(2048, min(32768, (int)($this->c['num_ctx'] ?? 8192)));
     }
 
+    /** Model that reads files: the fast learning model when it is installed, otherwise the chat model. */
+    public function learnModel(): string
+    {
+        static $cache = [];
+        $m = trim((string)($this->c['learn_model'] ?? ''));
+        if ($m === '') return $this->model('chat');
+        if (!isset($cache[$m])) {
+            $cache[$m] = false;
+            try {
+                foreach (($this->request('/api/tags', null, null, 5)['models'] ?? []) as $t) {
+                    $n = (string)($t['name'] ?? '');
+                    if ($n === $m || $n === "$m:latest" || str_starts_with($n, $m . ':')) { $cache[$m] = true; break; }
+                }
+            } catch (\Throwable) {}
+        }
+        return $cache[$m] ? $m : $this->model('chat');
+    }
+
     public function model(string $role): string
     {
         return (string)($this->c[$role . '_model'] ?? '');
@@ -86,6 +104,7 @@ final class Ollama
                 'chat' => ['name' => $this->model('chat'), 'installed' => $has($this->model('chat'))],
                 'embed' => ['name' => $this->model('embed'), 'installed' => $has($this->model('embed'))],
                 'vision' => ['name' => $this->model('vision'), 'installed' => $has($this->model('vision'))],
+                'learn' => ['name' => (string)($this->c['learn_model'] ?? ''), 'installed' => $has((string)($this->c['learn_model'] ?? ''))],
             ];
         } catch (\Throwable $e) {
             return ['online' => false, 'error' => $e->getMessage()];

@@ -30,7 +30,7 @@ TXT;
         $j = $this->llm->chatJson([
             ['role' => 'system', 'content' => self::SYSTEM],
             ['role' => 'user', 'content' => $user],
-        ]);
+        ], ['model' => $this->llm->learnModel()]);
         $entities = [];
         foreach (($j['entities'] ?? []) as $e) {
             if (!is_array($e) || empty($e['name']) || !is_string($e['name'])) continue;
@@ -57,6 +57,6 @@ TXT;
         return trim($this->llm->chat([
             ['role' => 'system', 'content' => 'Summarize documents for a knowledge base in 3-5 factual sentences. No preamble.'],
             ['role' => 'user', 'content' => "Title: $title\n\n" . mb_substr($text, 0, 9000)],
-        ], ['temperature' => 0.1]));
+        ], ['temperature' => 0.1, 'model' => $this->llm->learnModel()]));
     }
 }

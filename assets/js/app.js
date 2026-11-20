@@ -907,13 +907,18 @@ async function openDownload() {
     <label class="fld">What's the name of your AI? <input class="input" id="dlName" maxlength="40" value="${esc(info.ai_name)}" placeholder="e.g. Bruce AI"></label>
     <div class="dl-fixed"><span>${icon('cpu', 'sm')} Model: <b>Mnemo</b> 🔒</span><span><img src="assets/icon.svg" alt=""> Logo: <b>M</b> 🔒</span><span class="muted">These stay the same.</span></div>
     <label class="fld">Save to <input class="input" id="dlDest" value="${esc(info.default_dest)}"></label>
-    <div class="muted" style="font-size:12px;margin-top:-4px">${info.base_ready ? 'About ' + gb(info.base_size) + '. Use a drive with enough space, like D:\\ or a USB drive.' : 'About 10 GB. The first download takes longer (it prepares the AI once). After that it is quick.'}</div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:2px 0 10px"><input type="checkbox" id="dlVision"> Include picture understanding <span class="muted">(+3 GB; reads text and ideas in images)</span></label>
+    <div class="muted" style="font-size:12px;margin-top:-4px" id="dlSize"></div>
     ${info.job && info.job.state === 'done' ? `<div class="alert ok" style="margin-top:12px"><div>Last download: <code>${esc(info.job.folder)}</code></div></div>` : ''}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="dlGo">${icon('download', 'sm')}Download</button></div>`;
+  const sizeNote = () => { const k = $('#dlVision').checked ? 'full' : 'lite';
+    $('#dlSize').textContent = info.base_ready[k] ? 'About ' + gb(info.base_size[k]) + '. Use a drive with enough space, like D:\\ or a USB drive.'
+      : 'About ' + (k === 'full' ? 10 : 7) + ' GB. The first download with this choice takes longer (it prepares the AI once). After that it is quick.'; };
+  $('#dlVision').onchange = sizeNote; sizeNote();
   $('#dlName').focus(); $('#dlName').select();
   $('#dlGo').onclick = async () => {
     const b = $('#dlGo'); b.disabled = true; b.textContent = 'Starting…';
-    try { await api('package_create', {name: $('#dlName').value, dest: $('#dlDest').value}, 'POST'); dlProgress(); }
+    try { await api('package_create', {name: $('#dlName').value, dest: $('#dlDest').value, vision: $('#dlVision').checked}, 'POST'); dlProgress(); }
     catch (e) { b.disabled = false; b.innerHTML = icon('download', 'sm') + 'Download'; toast(esc(e.message), 'bad'); }
   };
 }
@@ -1060,6 +1065,9 @@ async function openSettings() {
     <label class="fld">Sources per answer <input class="input" type="number" min="3" max="20" id="setTopK" value="${esc(s.retrieval.top_k)}"></label>
     <div class="card"><h4>Speed</h4>
       <label class="fld">AI working memory <select class="select" id="setCtx">${[[4096, '4096 · fastest, shorter answers'], [6144, '6144 · best for a 6 GB graphics card'], [8192, '8192 · standard'], [16384, '16384 · 12 GB+ graphics card']].map(([v, t]) => `<option value="${v}" ${+s.ollama.num_ctx === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="fld">Learning model (reads your files) <select class="select" id="setLearn"><option value="">Same as the chat model (slower)</option>${['qwen2.5:1.5b', ...(o.models || [])].filter((m, i, a) => m && a.indexOf(m) === i && !/embed|vl:/.test(m)).map(m => `<option value="${esc(m)}" ${m === (s.ollama.learn_model || '') ? 'selected' : ''}>${esc(m)}${m === 'qwen2.5:1.5b' ? ' · fast, about 3x (recommended)' : ''}</option>`).join('')}</select></label>
+      ${o.learn && o.learn.name && !o.learn.installed ? `<div class="alert warn" style="margin:4px 0 8px"><div><b>${esc(o.learn.name)}</b> is not downloaded yet, so the chat model reads your files for now. <button class="btn sm primary" id="pullLearn" style="margin-left:6px">Download it (about 1 GB)</button></div></div>` : ''}
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="setCheckNow" ${['1', 'true', true].includes(s.ollama.check_while_learning) ? 'checked' : ''}> Fact-check new facts while learning (slower; otherwise the Sleep cycle does it)</label>
       <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="setEmbedCpu" ${['1', 'true', true].includes(s.ollama.embed_on_cpu) ? 'checked' : ''}> Run the search model on the CPU (leaves graphics memory for Mnemo)</label>
       <div class="muted" style="font-size:11.5px;margin-top:6px">Graphics card with 6 GB: choose 6144 and tick the box, so Mnemo runs 100% on the GPU. Check with <code>ollama ps</code>.</div></div>
     <div class="card"><h4>Optional tools</h4><dl class="kv"><dt>pdftotext (better PDFs)</dt><dd>${s.tools.pdftotext ? '<span class="badge ok">found</span>' : '<span class="badge">not found</span>'}</dd><dt>Tesseract (OCR)</dt><dd>${s.tools.tesseract ? '<span class="badge ok">found</span>' : '<span class="badge">not found</span>'}</dd>
@@ -1068,12 +1076,17 @@ async function openSettings() {
       <dt>GD (image similarity)</dt><dd>${s.gd ? '<span class="badge ok">enabled</span>' : '<span class="badge">enable extension=gd</span>'}</dd>
       <dt>Native vector index</dt><dd>${s.vector.enabled ? '<span class="badge ok">on</span>' : s.vector.supported ? '<span class="badge">available</span>' : '<span class="badge">MariaDB 11.7+</span>'}</dd></dl>
       <div class="muted" style="font-size:11.5px;margin-top:8px">Set full paths in <code>config.php</code> if installed but not detected. <a href="setup.php">Open setup check →</a></div></div>`;
+  if ($('#pullLearn')) $('#pullLearn').onclick = async () => {
+    const b = $('#pullLearn'); b.disabled = true; b.textContent = 'Downloading… (a few minutes)';
+    try { await api('model_pull', {model: o.learn.name}, 'POST'); toast('Downloading ' + o.learn.name + ' in the background. It is used automatically when ready.', 'ok'); }
+    catch (e) { b.disabled = false; b.textContent = 'Download it'; toast(esc(e.message), 'bad'); }
+  };
   if ($('#useMnemo')) $('#useMnemo').onclick = () => { const m = (o.models || []).find(x => /^mnemo:7b-trained/.test(x)) || (o.models || []).find(x => /^mnemo:/.test(x)); $('#setChat').value = m; $('#useMnemo').closest('.card').remove(); toast('Click Save to switch to ' + m, 'ok'); };
   $('#settingsModal').classList.add('show');
 }
 $('#btnSettings').onclick = openSettings;
 $('#settingsSave').onclick = async () => {
-  await api('settings_save', {ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, ollama_num_ctx: $('#setCtx').value, ollama_embed_on_cpu: $('#setEmbedCpu').checked ? '1' : '0', retrieval_top_k: $('#setTopK').value});
+  await api('settings_save', {ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, ollama_num_ctx: $('#setCtx').value, ollama_embed_on_cpu: $('#setEmbedCpu').checked ? '1' : '0', ollama_learn_model: $('#setLearn').value, ollama_check_while_learning: $('#setCheckNow').checked ? '1' : '0', retrieval_top_k: $('#setTopK').value});
   $('#settingsModal').classList.remove('show'); toast('Settings saved', 'ok'); refreshStatus();
 };
 

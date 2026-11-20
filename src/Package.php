@@ -14,15 +14,16 @@ final class Package
 {
     private static function jobFile(): string { return atlas_config()['storage_root'] . '/package.json'; }
 
-    public static function baseDir(): string
+    /** Base installer folder: ...\base (with the picture model) or ...\base-lite (without, about 3 GB smaller). */
+    public static function baseDir(bool $vision = false): string
     {
-        return rtrim(str_replace('\\', '/', (string)(atlas_config()['package']['base_dir'] ?? 'C:/ATLAS-build/base')), '/');
+        return rtrim(str_replace('\\', '/', (string)(atlas_config()['package']['base_dir'] ?? 'C:/ATLAS-build/base')), '/') . ($vision ? '' : '-lite');
     }
 
     /** Files of the base installer: ATLAS-Setup.exe and its ATLAS-Setup-N.bin parts. */
-    public static function baseFiles(): array
+    public static function baseFiles(bool $vision = false): array
     {
-        $d = self::baseDir();
+        $d = self::baseDir($vision);
         if (!is_file("$d/ATLAS-Setup.exe")) return [];
         $files = ["$d/ATLAS-Setup.exe"];
         foreach (glob("$d/ATLAS-Setup-*.bin") ?: [] as $f) $files[] = $f;
@@ -50,9 +51,8 @@ final class Package
 
     public static function info(): array
     {
-        $files = self::baseFiles();
-        $size = 0;
-        foreach ($files as $f) $size += (int)@filesize($f);
+        $sizes = [];
+        foreach (['lite' => false, 'full' => true] as $k => $v) { $n = 0; foreach (self::baseFiles($v) as $f) $n += (int)@filesize($f); $sizes[$k] = $n; }
         $default = PHP_OS_FAMILY === 'Windows' ? (is_dir('D:/') ? 'D:\\ATLAS-Downloads' : 'C:\\ATLAS-Downloads') : sys_get_temp_dir() . '/ATLAS-Downloads';
         $job = json_decode((string)@file_get_contents(self::jobFile()), true);
         // A job whose background process is gone (PC restarted, crashed, old version) is shown as stopped, never as "working" forever
@@ -62,7 +62,7 @@ final class Package
         }
         $db = Db::get();
         return [
-            'base_ready' => (bool)$files, 'base_dir' => str_replace('/', '\\', self::baseDir()), 'base_size' => $size,
+            'base_ready' => ['lite' => $sizes['lite'] > 0, 'full' => $sizes['full'] > 0], 'base_size' => $sizes,
             'default_dest' => $default, 'ai_name' => Mnemo::aiName(),
             'knows' => ['sources' => (int)$db->val("SELECT COUNT(*) FROM documents WHERE sha256 <> 'taught-knowledge'"), 'concepts' => (int)$db->val('SELECT COUNT(*) FROM entities')],
             'job' => is_array($job) ? $job : null,
@@ -94,24 +94,24 @@ final class Package
     }
 
     /** Starts the copy in the background so the page stays responsive. */
-    public static function start(string $name, string $dest): array
+    public static function start(string $name, string $dest, bool $vision = false): array
     {
         $name = self::cleanName($name);
         $dest = rtrim(trim($dest), '\\/');
         if ($dest === '') throw new RuntimeException('Choose where to save it, for example D:\\ATLAS-Downloads');
-        $build = !self::baseFiles();
+        $build = !self::baseFiles($vision);
         if ($build && PHP_OS_FAMILY === 'Windows' && !self::isccFound()) throw new RuntimeException('One free tool is missing: install Inno Setup 7 from jrsoftware.org/isdl.php, then click Download again.');
         $job = json_decode((string)@file_get_contents(self::jobFile()), true);
         if (is_array($job) && ($job['state'] ?? '') === 'working' && self::alive($job)) throw new RuntimeException('A download is already being prepared. Open the progress at the bottom right, or click Cancel there.');
         if (!is_dir($dest) && !@mkdir($dest, 0777, true)) throw new RuntimeException("Cannot create the folder $dest. Check the drive letter.");
         $need = $build ? 11 * 1073741824 : 0;
-        foreach (self::baseFiles() as $f) $need += (int)filesize($f);
+        foreach (self::baseFiles($vision) as $f) $need += (int)filesize($f);
         $free = @disk_free_space($dest);
         if ($free !== false && $free < $need + 200 * 1048576) throw new RuntimeException('Not enough free space on that drive: ' . round($need / 1073741824, 1) . ' GB needed, ' . round($free / 1073741824, 1) . ' GB free.');
 
         // Everything else (memory card, first-time base build, copy) runs in the background with a progress bar
         $job = ['state' => 'working', 'pct' => 0, 'msg' => 'Starting…', 'eta' => '', 'ts' => time(), 'started' => time(), 'name' => $name,
-                'dest' => $dest, 'card' => '', 'files' => self::baseFiles(), 'build' => $build, 'folder' => ''];
+                'dest' => $dest, 'card' => '', 'files' => self::baseFiles($vision), 'build' => $build, 'vision' => $vision, 'folder' => ''];
         file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         $php = PHP_OS_FAMILY === 'Windows' ? (is_file(PHP_BINDIR . '\\php.exe') ? PHP_BINDIR . '\\php.exe' : 'C:\\xampp\\php\\php.exe') : (PHP_BINARY ?: 'php');
@@ -164,12 +164,12 @@ final class Package
             // 1. Memory + name
             [$token] = Cards::export(Cards::activeId());
             if (!rename(Cards::exportPath($token), $pkg . DIRECTORY_SEPARATOR . 'memory.atlascard')) throw new RuntimeException('Could not save the memory.');
-            file_put_contents($pkg . DIRECTORY_SEPARATOR . 'identity.json', json_encode(['ai_name' => $job['name'], 'model' => 'mnemo:7b', 'created' => date('c')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            file_put_contents($pkg . DIRECTORY_SEPARATOR . 'identity.json', json_encode(['ai_name' => $job['name'], 'model' => 'mnemo:7b', 'vision' => !empty($job['vision']), 'created' => date('c')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $save(['pct' => $build ? 2 : 3]);
 
             // 2. First download on this PC: prepare the AI installer once
-            if ($build) self::buildBase($save);
-            $job['files'] = self::baseFiles();
+            if ($build) self::buildBase($save, !empty($job['vision']));
+            $job['files'] = self::baseFiles(!empty($job['vision']));
             if (!$job['files']) throw new RuntimeException('Preparing the AI installer failed. Details: storage\logs\build.log');
 
             // 3. Copy the installer
@@ -210,7 +210,7 @@ final class Package
     }
 
     /** Runs "Build ATLAS installer.bat newborn" and turns its progress into 2-75 %. */
-    private static function buildBase(callable $save): void
+    private static function buildBase(callable $save, bool $vision): void
     {
         $bat = realpath(__DIR__ . '/../installer/Build ATLAS installer.bat');
         $log = atlas_config()['storage_root'] . '/logs/build.log';
@@ -218,7 +218,7 @@ final class Package
         @unlink($log);
         $stage = 'C:/ATLAS-build/stage';
         $models = self::dirSize('C:/ATLAS-AI/models') ?: 9 * 1073741824;
-        $proc = proc_open('cmd /c ""' . $bat . '" newborn < NUL > "' . $log . '" 2>&1"', [], $pipes);
+        $proc = proc_open('cmd /c ""' . $bat . '" newborn ' . ($vision ? 'full' : 'lite') . ' < NUL > "' . $log . '" 2>&1"', [], $pipes);
         if (!is_resource($proc)) throw new RuntimeException('Could not start preparing the AI installer.');
         $stageTotal = 0;
         while (proc_get_status($proc)['running']) {
@@ -228,7 +228,7 @@ final class Package
                 // Inno Setup writes ATLAS-Setup-1.bin; it ends up about as big as the staged files
                 if (!$stageTotal) $stageTotal = self::dirSize($stage) ?: $models;
                 $bin = 0;
-                foreach (glob(self::baseDir() . '/ATLAS-Setup-*.bin') ?: [] as $f) { clearstatcache(true, $f); $bin += (int)@filesize($f); }
+                foreach (glob(self::baseDir($vision) . '/ATLAS-Setup-*.bin') ?: [] as $f) { clearstatcache(true, $f); $bin += (int)@filesize($f); }
                 $save(['pct' => 35 + (int)floor(min(1, $bin / $stageTotal) * 40), 'msg' => 'Preparing the AI installer: packing ' . round($bin / 1073741824, 1) . ' of ' . round($stageTotal / 1073741824, 1) . ' GB (first time only)']);
             } elseif (str_contains($txt, '[5/5]')) {
                 $got = self::dirSize("$stage/models");

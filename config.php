@@ -23,7 +23,9 @@ $cfg = [
         'embed_model' => 'nomic-embed-text',  // or bge-m3
         'vision_model'=> 'qwen2.5vl:3b',      // 32 GB+: qwen2.5vl:7b ; '' to disable image captions
         'num_ctx'     => 8192,   // AI working memory in tokens. 6 GB graphics card: 6144 (fits fully on the GPU)
-        'embed_on_cpu'=> false,  // true = search model runs on the CPU and leaves graphics memory to the chat model
+        'embed_on_cpu'=> false,
+        'learn_model' => 'qwen2.5:1.5b', // reads files in the background (about 3x faster); '' = use chat_model. Apache 2.0
+        'check_while_learning' => false, // fact-check new facts right away (slower) or during the Sleep cycle  // true = search model runs on the CPU and leaves graphics memory to the chat model
         'timeout'     => 600,
     ],
     'tools' => [

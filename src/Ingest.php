@@ -63,13 +63,20 @@ final class Ingest
         return $n;
     }
 
+    public static function checkWhileLearning(): bool
+    {
+        return filter_var(atlas_config()['ollama']['check_while_learning'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
     public function pending(): array
     {
         return [
             'queued' => (int)$this->db->val("SELECT COUNT(*) FROM documents WHERE status = 'queued'"),
             'processing' => (int)$this->db->val("SELECT COUNT(*) FROM documents WHERE status = 'processing'"),
             'chunks_left' => (int)$this->db->val("SELECT COUNT(*) FROM chunks c JOIN documents d ON d.id = c.document_id WHERE d.status = 'processing' AND c.extracted = 0"),
-            'claims_left' => (int)$this->db->val('SELECT COUNT(*) FROM claims WHERE checked = 0'),
+            // Facts waiting for the Sleep cycle do not count as "learning" work
+            'claims_left' => self::checkWhileLearning() ? (int)$this->db->val('SELECT COUNT(*) FROM claims WHERE checked = 0') : 0,
+            'claims_waiting' => (int)$this->db->val('SELECT COUNT(*) FROM claims WHERE checked = 0'),
             'embed_left' => (int)$this->db->val('SELECT COUNT(*) FROM chunks c LEFT JOIN chunk_embeddings e ON e.chunk_id = c.id WHERE e.chunk_id IS NULL'),
             // Totals for the percent bar
             'chunks_total' => (int)$this->db->val("SELECT COUNT(*) FROM chunks c JOIN documents d ON d.id = c.document_id WHERE d.status = 'processing'"),
@@ -154,7 +161,7 @@ final class Ingest
             }
             // Stage 3: fact-check new claims against everything Mnemo already knows
             $truth = new Truth($this->llm);
-            if ($truth->uncheckedCount()) {
+            if (self::checkWhileLearning() && $truth->uncheckedCount()) {
                 try {
                     $report['checked_claims'] = ($report['checked_claims'] ?? 0) + $truth->checkNext(3);
                 } catch (Throwable $e) {

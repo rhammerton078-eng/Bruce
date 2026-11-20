@@ -41,6 +41,18 @@ final class Services
 
     private static function q(string $s): string { return "'" . str_replace("'", "''", $s) . "'"; }
 
+    /** Downloads an allowed model in the background (needs internet once). */
+    public static function pull(string $model): array
+    {
+        if (!in_array($model, ['qwen2.5:1.5b', 'qwen2.5:7b', 'nomic-embed-text', 'qwen2.5vl:3b'], true)) throw new RuntimeException('Unknown model');
+        [$exe, $models] = self::ai();
+        $logs = str_replace('/', '\\', atlas_config()['storage_root'] . '/logs');
+        @mkdir($logs, 0777, true);
+        self::ps(($models ? '$env:OLLAMA_MODELS=' . self::q($models) . '; ' : '') . 'Start-Process -FilePath ' . self::q($exe) . ' -ArgumentList ' . self::q('pull') . ',' . self::q($model)
+            . ' -WindowStyle Hidden -RedirectStandardOutput ' . self::q("$logs\\pull.log") . ' -RedirectStandardError ' . self::q("$logs\\pull-err.log"));
+        return ['started' => true];
+    }
+
     public static function control(string $part, string $do): array
     {
         if (!in_array($do, ['start', 'stop', 'restart'], true)) throw new RuntimeException('Unknown action');

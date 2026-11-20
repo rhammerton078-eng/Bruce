@@ -51,6 +51,7 @@ try {
     $db = Atlas\Db::get();
     $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['app.ai_name', $name]);
     $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['ollama.chat_model', 'mnemo:7b']);
+    if (array_key_exists('vision', $id) && !$id['vision']) $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['ollama.vision_model', '']);
     file_put_contents("$pkg/.done", date('c'));
     $say("[ok] $name is ready.");
 } catch (Throwable $e) {
