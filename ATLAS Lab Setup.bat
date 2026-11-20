@@ -31,6 +31,9 @@ echo   AI folder: %AI%
 set "OLLAMA_MODELS=%AI%\models"
 set "OLLAMA_KEEP_ALIVE=30m"
 set "OLLAMA_IGPU_ENABLE="
+REM Smaller AI working memory so qwen2.5:7b fits on a 6 GB graphics card (harmless on CPU-only PCs)
+set "OLLAMA_FLASH_ATTENTION=1"
+set "OLLAMA_KV_CACHE_TYPE=q8_0"
 
 REM --- 2. Portable Ollama (download only if missing) ----------------------
 if not exist "%AI%\ollama\ollama.exe" (
@@ -43,6 +46,18 @@ if not exist "%AI%\ollama\ollama.exe" (
   del "%AI%\ollama\ollama.zip"
 )
 if not exist "%AI%\ollama\ollama.exe" ( echo   [!] Ollama could not be installed. & pause & exit /b 1 )
+
+REM --- 2b. NVIDIA graphics card? Make sure this Ollama has the GPU files --
+nvidia-smi >nul 2>&1
+if errorlevel 1 ( echo   No NVIDIA graphics card: the AI runs on the CPU. & goto :gpudone )
+dir /b "%AI%\ollama\lib\ollama\cuda_*" >nul 2>&1
+if errorlevel 1 (
+  echo   [!] NVIDIA graphics card found, but this Ollama has NO graphics-card files.
+  echo       The AI will be slow. Install OllamaSetup.exe from ollama.com, then delete
+  echo       %AI%\ollama and run "ATLAS Restore from Telegram.bat" again.
+  timeout /t 8 >nul
+) else ( echo   [ok] NVIDIA graphics card: the AI runs on the GPU )
+:gpudone
 
 REM --- 3. Start Ollama ----------------------------------------------------
 taskkill /IM "ollama app.exe" /F >nul 2>&1
