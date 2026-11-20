@@ -1056,6 +1056,8 @@ async function openSettings() {
     <div class="card" style="display:flex;gap:14px;align-items:center"><img class="about-logo" src="assets/icon.svg" alt="">
       <div style="flex:1"><b style="font-size:15px">${esc(app.name || 'ATLAS · Mnemo')}</b> <span class="badge">v${esc(app.version || '1.0.0')}</span>
         <div class="muted" style="font-size:12px">An offline AI that starts knowing nothing and learns from what you give it.${app.author ? ' Created by ' + esc(app.author) + '.' : ''}</div>
+        <label class="fld" style="margin:8px 0 4px">Your AI's name <input class="input" id="setAiName" maxlength="40" value="${esc(S.status?.ai_name || 'Mnemo')}"></label>
+        <div class="muted" style="font-size:11.5px">Model: <b>Mnemo</b> 🔒 · Logo 🔒 (these stay the same)</div>
         <div class="muted" style="font-size:11.5px;margin-top:4px">Powered by Qwen 2.5 (Alibaba Cloud, Apache 2.0) · Ollama (MIT) · nomic-embed-text (Apache 2.0) · <a href="NOTICE.txt" target="_blank">licenses</a></div></div></div>
     ${hasMnemo && !/^mnemo:/.test(s.ollama.chat_model) ? `<div class="card" style="display:flex;gap:10px;align-items:center;border-color:rgba(251,191,36,.45)"><div style="flex:1;font-size:13px"><b>Mnemo's own model is installed.</b> <span class="muted">Use <code>${esc((o.models || []).find(m => /^mnemo:/.test(m)))}</code> as the chat model.</span></div><button class="btn sm primary" id="useMnemo">Use it</button></div>` : ''}
     <div class="card" style="display:flex;gap:10px;align-items:center"><span class="dot ${o.online ? 'ok' : 'bad'}"></span><div style="flex:1"><b>Ollama</b> <span class="muted">${esc(s.ollama.url)}</span><div class="muted" style="font-size:12px">${o.online ? (o.models.length + ' models installed') : 'Not running. Install from ollama.com and start it.'}</div></div></div>
@@ -1086,8 +1088,8 @@ async function openSettings() {
 }
 $('#btnSettings').onclick = openSettings;
 $('#settingsSave').onclick = async () => {
-  await api('settings_save', {ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, ollama_num_ctx: $('#setCtx').value, ollama_embed_on_cpu: $('#setEmbedCpu').checked ? '1' : '0', ollama_learn_model: $('#setLearn').value, ollama_check_while_learning: $('#setCheckNow').checked ? '1' : '0', retrieval_top_k: $('#setTopK').value});
-  $('#settingsModal').classList.remove('show'); toast('Settings saved', 'ok'); refreshStatus();
+  try { await api('settings_save', {ai_name: $('#setAiName').value, ollama_chat_model: $('#setChat').value, ollama_embed_model: $('#setEmbed').value, ollama_vision_model: $('#setVision').value, ollama_num_ctx: $('#setCtx').value, ollama_embed_on_cpu: $('#setEmbedCpu').checked ? '1' : '0', ollama_learn_model: $('#setLearn').value, ollama_check_while_learning: $('#setCheckNow').checked ? '1' : '0', retrieval_top_k: $('#setTopK').value}); } catch (e) { toast(esc(e.message), 'bad'); return; }
+  $('#settingsModal').classList.remove('show'); toast('Settings saved', 'ok'); refreshStatus(); if (typeof loadCards === 'function') loadCards();
 };
 
 // ---------------------------------------------------------------- collections

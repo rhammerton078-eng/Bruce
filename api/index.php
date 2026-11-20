@@ -347,6 +347,12 @@ try {
                 'vector' => Vector::nativeSupported(), 'gd' => function_exists('imagecreatefromstring')]);
 
         case 'settings_save':
+            if (($n = $in('ai_name')) !== null) {
+                // The AI's display name (model and logo stay the same); the memory card gets the same name
+                $n = Package::cleanName((string)$n);
+                $db->run('REPLACE INTO settings (k, v) VALUES (?, ?)', ['app.ai_name', $n]);
+                try { Cards::rename(Cards::activeId(), $n); } catch (Throwable) {}
+            }
             $allowed = ['ollama.chat_model', 'ollama.embed_model', 'ollama.vision_model', 'ollama.num_ctx', 'ollama.embed_on_cpu', 'ollama.learn_model', 'ollama.check_while_learning', 'retrieval.top_k'];
             foreach ($allowed as $k) {
                 $v = $in(str_replace('.', '_', $k));
