@@ -21,7 +21,13 @@ for ($i = 0; $i < 40; $i++) {
 // 2. Install the database the first time
 try {
     Atlas\Db::get()->val('SELECT 1 FROM documents LIMIT 1');
-} catch (Throwable) {
+} catch (Throwable $e) {
+    if (str_contains($e->getMessage(), "doesn't exist in engine")) {
+        // Broken database files (copied while not consistent): start this database fresh
+        $say('Repairing the memory database...');
+        try { Atlas\Db::server()->pdo->exec('DROP DATABASE IF EXISTS `' . $cfg['db']['name'] . '`'); } catch (Throwable) {}
+        @unlink(is_string($pkg) && $pkg !== '' ? "$pkg/.done" : '');
+    }
     $say('Setting up the memory for the first time...');
     $sql = (string)file_get_contents(__DIR__ . '/../sql/schema.sql');
     $sql = str_replace(['CREATE DATABASE IF NOT EXISTS atlas', 'USE atlas;'], ['CREATE DATABASE IF NOT EXISTS `' . $cfg['db']['name'] . '`', 'USE `' . $cfg['db']['name'] . '`;'], $sql);

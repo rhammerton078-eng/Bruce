@@ -36,13 +36,6 @@ choice /C 12 /N /M "  Press 1 or 2: "
 if errorlevel 2 ( set "MODE=keep" ) else ( set "MODE=newborn" )
 :mode_ok
 
-if "%MODE%"=="keep" (
-  echo.
-  echo   Stop MySQL now: XAMPP Control Panel ^> MySQL ^> Stop. Also stop "ATLAS worker".
-  pause
-  netstat -ano | findstr /R /C:":3306 .*LISTENING" >NUL
-  if not errorlevel 1 ( echo   [!] MySQL is still running on port 3306. Stop it and run this again. & pause & exit /b 1 )
-)
 
 echo.
 echo   [1/5] Cleaning %BUILD% ...
@@ -52,21 +45,13 @@ mkdir "%STAGE%" 2>nul
 echo   [2/5] Copying the web server and MySQL ...
 robocopy "%SRC_XAMPP%" "%STAGE%\xampp" /E /NFL /NDL /NJH /NJS /NP /XF *.log /XD "%SRC_XAMPP%\htdocs" "%SRC_XAMPP%\mysql\data" "%SRC_XAMPP%\tomcat" "%SRC_XAMPP%\perl" "%SRC_XAMPP%\FileZillaFTP" "%SRC_XAMPP%\MercuryMail" "%SRC_XAMPP%\sendmail" "%SRC_XAMPP%\webdav" "%SRC_XAMPP%\tmp" "%SRC_XAMPP%\apache\logs" >nul
 mkdir "%STAGE%\xampp\tmp" "%STAGE%\xampp\apache\logs" 2>nul
-if "%MODE%"=="keep" (
-  robocopy "%SRC_XAMPP%\mysql\data" "%STAGE%\xampp\mysql\data" /E /NFL /NDL /NJH /NJS /NP /XF *.err *.pid >nul
-) else (
-  robocopy "%SRC_XAMPP%\mysql\backup" "%STAGE%\xampp\mysql\data" /E /NFL /NDL /NJH /NJS /NP >nul
-)
+robocopy "%SRC_XAMPP%\mysql\backup" "%STAGE%\xampp\mysql\data" /E /NFL /NDL /NJH /NJS /NP >nul
 
 echo   [3/5] Copying ATLAS ...
 set "A=%SRC_XAMPP%\htdocs\atlas"
-if "%MODE%"=="keep" (
-  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF worker.json worker.lock package.json /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\logs" >nul
-) else (
-  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF cards.json config.local.php allow_lan worker.json worker.lock package.json /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\uploads" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\cards" "%A%\storage\inbox" "%A%\storage\logs" >nul
-)
+robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF cards.json config.local.php allow_lan worker.json worker.lock package.json /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\uploads" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\cards" "%A%\storage\inbox" "%A%\storage\logs" >nul
 for %%D in (uploads backups exports cards inbox logs) do mkdir "%STAGE%\xampp\htdocs\atlas\storage\%%D" 2>nul
-"%SRC_XAMPP%\php\php.exe" "%HERE%make-config.php" "%A%\config.local.php" "%STAGE%\xampp\htdocs\atlas\config.local.php" %MODE%
+"%SRC_XAMPP%\php\php.exe" "%HERE%make-config.php" "%A%\config.local.php" "%STAGE%\xampp\htdocs\atlas\config.local.php" newborn
 
 echo   [4/5] Setting ATLAS's own ports (web 8765, MySQL 3307) ...
 powershell -NoProfile -Command ^
@@ -100,12 +85,12 @@ echo   [5/5] Copying the AI (Ollama + models, about 12 GB) ...
 robocopy "%SRC_AI%\ollama" "%STAGE%\ollama" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%SRC_AI%\models" "%STAGE%\models" /E /NFL /NDL /NJH /NJS /NP >nul
 
-if "%MODE%"=="keep" ( echo   You can start MySQL again now. )
 echo.
 echo   Compiling the installer (this takes a while)...
 REM Newborn = the base for "Download my AI" in ATLAS; MY Mnemo = a complete copy of this PC's AI
 if "%MODE%"=="keep" ( set "OUT=%BUILD%\output" ) else ( set "OUT=%BUILD%\base" )
 "%ISCC%" /DStage="%STAGE%" /O"%OUT%" "%HERE%ATLAS.iss"
+if "%MODE%"=="keep" "%SRC_XAMPP%\php\php.exe" "%A%\tools\export-package.php" "%OUT%"
 if errorlevel 1 ( echo   [!] Inno Setup failed - see the messages above. & pause & exit /b 1 )
 echo.
 echo   -------------------------------------------------------------
