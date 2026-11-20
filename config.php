@@ -4,6 +4,11 @@
 // is never committed, and is not overwritten when you pull updates.
 // Copy config.local.example.php to config.local.php to start.
 $cfg = [
+    'app' => [
+        'name'    => 'ATLAS · Mnemo',
+        'version' => '1.0.0',
+        'author'  => 'Robert Bruce Jr. C. Hammerton',
+    ],
     'db' => [
         'host' => '127.0.0.1',
         'port' => 3306,

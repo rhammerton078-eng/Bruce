@@ -187,3 +187,18 @@ storage/                 uploads/, inbox/, backups/, cards/ (one folder per extr
   "System Features at a Glance" full-screen section. The added slides are in `docs/presentation/new-slides/`.
 - `telegram/`: `ATLAS Restore from Telegram.bat` rebuilds the AI on a Deep Freeze lab PC from the files kept in Telegram
   (model parts + Ollama), and `TELEGRAM-CHECKLIST.txt` lists what to keep there. Eject a memory card before every shutdown.
+
+## Branding, Mnemo's own model, installer and training
+
+- **Name & logo**: `assets/icon.svg` (plus `icon-192.png`, `icon-512.png`, `atlas.ico`). Settings shows an About card with
+  credits; third-party licenses are in `NOTICE.txt` ("Powered by Qwen 2.5").
+- **`mnemo:7b`**: `ai/Modelfile` gives Mnemo its own model name in Ollama, built on `qwen2.5:7b` (instant, no download).
+  `ATLAS Lab Setup.bat` creates it automatically; or run `ai\Create Mnemo model.bat`. Then Settings → Use it → Save.
+- **Real training (fine-tuning)**: Quality → Training data, then open `ai/finetune/Mnemo_Train_Colab.ipynb` in Google Colab
+  (free T4 GPU). Put the resulting `mnemo-7b-q4_k_m.gguf` in Downloads and run `ai\Install trained Mnemo.bat`
+  to get `mnemo:7b-trained`. Compare both with Quality → Run benchmark.
+- **Installer**: `installer\Build ATLAS installer.bat` (needs free Inno Setup 6) builds `C:\ATLAS-build\output\ATLAS-Setup.exe`
+  with the web server, MySQL, ATLAS, Ollama and the models, either with a newborn Mnemo or with your trained memory.
+  The installed copy uses its own ports (web 8765, MySQL 3307) and lives in `C:\ATLAS`.
+- License note: `qwen2.5:7b`, `14b`, `32b` and `nomic-embed-text` are Apache 2.0. `qwen2.5:3b` and `qwen2.5vl:3b` use the
+  Qwen Research license (non-commercial). Turn off the vision model before selling ATLAS.

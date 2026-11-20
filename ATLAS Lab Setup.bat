@@ -72,6 +72,9 @@ for %%M in (qwen2.5:7b nomic-embed-text qwen2.5vl:3b) do (
   findstr /B /I /C:"%%M " /C:"%%M:latest " "%TEMP%\atlas_models.txt" >nul
   if errorlevel 1 ( echo   Downloading %%M ... & "%AI%\ollama\ollama.exe" pull %%M ) else ( echo   [ok] %%M )
 )
+REM Mnemo's own model name (instant: reuses the qwen2.5:7b files)
+findstr /B /I /C:"mnemo:7b " "%TEMP%\atlas_models.txt" >nul
+if errorlevel 1 if exist "%APP%\ai\Modelfile" ( echo   Creating mnemo:7b ... & "%AI%\ollama\ollama.exe" create mnemo:7b -f "%APP%\ai\Modelfile" >nul 2>&1 && echo   [ok] mnemo:7b )
 del "%TEMP%\atlas_models.txt" >nul 2>&1
 
 REM --- 5. School XAMPP: Apache + MySQL (port 3306) ------------------------

@@ -1,13 +1,15 @@
 {
   "name": "ATLAS · Mnemo",
   "short_name": "ATLAS",
-  "description": "Offline knowledge reconstruction engine. Mnemo learns from your documents.",
+  "description": "ATLAS · Mnemo: an offline AI that starts knowing nothing and learns from what you give it.",
   "start_url": "./index.php",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07090d",
   "theme_color": "#0b0e14",
   "icons": [
-    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

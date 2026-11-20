@@ -11,19 +11,20 @@ $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ATLAS · Knowledge Graph</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230ea5e9'/><circle cx='16' cy='16' r='4' fill='white'/></svg>">
+<title>ATLAS · Mnemo</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icon-192.png" sizes="192x192" type="image/png">
 <link rel="stylesheet" href="assets/css/app.css?v=<?= $v ?>">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0e14">
-<link rel="apple-touch-icon" href="assets/icon.svg">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 </head>
 <body>
 <div class="app" id="app">
 
   <!-- Icon rail -->
   <nav class="rail">
-    <div class="logo" title="ATLAS"><svg viewBox="0 0 24 24" class="i"><circle cx="12" cy="12" r="2.5"/><circle cx="5" cy="6" r="1.6"/><circle cx="19" cy="6" r="1.6"/><circle cx="5" cy="18" r="1.6"/><circle cx="19" cy="18" r="1.6"/><path d="M6.3 7l3.9 3.6M17.7 7l-3.9 3.6M6.3 17l3.9-3.6M17.7 17l-3.9-3.6"/></svg></div>
+    <div class="logo" title="ATLAS · Mnemo"><img src="assets/icon.svg" alt="ATLAS · Mnemo"></div>
     <button data-view="graph" data-tip="Knowledge graph" class="active"><i data-icon="graph"></i></button>
     <button data-view="ask" data-tip="Ask Mnemo"><i data-icon="chat"></i></button>
     <button data-view="documents" data-tip="Sources"><i data-icon="files"></i></button>
@@ -43,7 +44,7 @@ $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
 
   <!-- Top bar -->
   <header class="topbar">
-    <div class="brand">ATLAS <small>Knowledge Graph</small></div>
+    <div class="brand">ATLAS <small>Mnemo AI</small></div>
     <div class="tabs">
       <button class="tab active" data-view="graph"><i data-icon="graph"></i><span>Graph</span></button>
       <button class="tab" data-view="ask"><i data-icon="chat"></i><span>Ask Mnemo</span></button>

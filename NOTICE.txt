@@ -1,0 +1,38 @@
+ATLAS · Mnemo AI  (version 1.0.0)
+Created by Robert Bruce Jr. C. Hammerton
+BSIT, College of Computer Studies, Colegio de Santa Rita de San Carlos, Inc.
+
+ATLAS is an offline AI that starts knowing nothing and learns from what you give it.
+Mnemo's knowledge (your files, facts and the idea map) is stored on your own computer.
+
+------------------------------------------------------------------------------
+THIRD-PARTY SOFTWARE
+ATLAS uses the following software. Each keeps its own license and copyright.
+------------------------------------------------------------------------------
+
+AI models
+  Qwen 2.5 7B Instruct (qwen2.5:7b) ....... Alibaba Cloud, Apache License 2.0
+  Qwen 2.5-VL 3B (qwen2.5vl:3b) ............ Alibaba Cloud, Qwen Research License
+                                             (research / non-commercial use; disable
+                                             image understanding in Settings for
+                                             commercial distribution)
+  nomic-embed-text ......................... Nomic AI, Apache License 2.0
+  "mnemo:7b" and "mnemo:7b-trained" are built on Qwen 2.5 7B. Built with Qwen.
+
+AI runtime
+  Ollama ................................... MIT License
+  llama.cpp / ggml (inside Ollama) ......... MIT License
+
+Web server and database (XAMPP by Apache Friends)
+  Apache HTTP Server ....................... Apache License 2.0
+  PHP ...................................... PHP License 3.01
+  MariaDB .................................. GNU GPL v2 (source: mariadb.org)
+  phpMyAdmin ............................... GNU GPL v2
+
+Libraries
+  force-graph / 3d-force-graph (Vasco Asturiano) ... MIT License
+  smalot/pdfparser ......................... LGPL v3
+  Symfony polyfills ........................ MIT License
+
+Full license texts are available from each project's website.
+The Apache License 2.0 is at https://www.apache.org/licenses/LICENSE-2.0

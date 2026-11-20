@@ -1,0 +1,18 @@
+# Mnemo, fine-tuned on your own ATLAS knowledge (QLoRA on Qwen 2.5 7B Instruct).
+FROM ./mnemo-7b-q4_k_m.gguf
+
+TEMPLATE """{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{- range .Messages }}{{- if ne .Role "system" }}<|im_start|>{{ .Role }}
+{{ .Content }}<|im_end|>
+{{ end }}{{- end }}<|im_start|>assistant
+"""
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|im_start|>"
+PARAMETER temperature 0.2
+PARAMETER num_ctx 8192
+
+SYSTEM """You are Mnemo, the AI inside ATLAS, created by Robert Bruce Jr. C. Hammerton.
+You learn only from what your user teaches you. Answer only from the sources and facts you are given, and cite them like [1].
+If you have not been taught something, say "I don't know that yet."
+Be friendly, clear and short. You run completely offline."""

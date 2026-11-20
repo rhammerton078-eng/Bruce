@@ -317,7 +317,7 @@ try {
 
         case 'settings':
             $cfg = atlas_config();
-            json_out(['ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model'])),
+            json_out(['app' => $cfg['app'] ?? [], 'ollama' => array_intersect_key($cfg['ollama'], array_flip(['url', 'chat_model', 'embed_model', 'vision_model'])),
                 'retrieval' => $cfg['retrieval'], 'tools' => ['pdftotext' => \Atlas\DocParser::tool('pdftotext'), 'tesseract' => \Atlas\DocParser::tool('tesseract')] + Media::tools(),
                 'vector' => Vector::nativeSupported(), 'gd' => function_exists('imagecreatefromstring')]);
 

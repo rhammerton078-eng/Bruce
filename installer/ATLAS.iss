@@ -1,0 +1,56 @@
+; ATLAS · Mnemo installer (Inno Setup 6). Built by "Build ATLAS installer.bat",
+; which copies everything into the stage folder first and passes it as /DStage=...
+#ifndef Stage
+  #define Stage "C:\ATLAS-build\stage"
+#endif
+#define AppName "ATLAS - Mnemo AI"
+#define AppVersion "1.0.0"
+
+[Setup]
+AppId={{6E7A1C52-9B1D-4E0B-A7F3-5C2D8E4B9A61}
+AppName={#AppName}
+AppVersion={#AppVersion}
+AppPublisher=Robert Bruce Jr. C. Hammerton
+VersionInfoDescription=ATLAS - offline AI that learns from your files
+DefaultDirName={sd}\ATLAS
+DisableProgramGroupPage=yes
+PrivilegesRequired=admin
+OutputBaseFilename=ATLAS-Setup
+SetupIconFile={#Stage}\atlas.ico
+UninstallDisplayIcon={app}\atlas.ico
+LicenseFile={#Stage}\NOTICE.txt
+Compression=lzma2/fast
+SolidCompression=no
+DiskSpanning=yes
+DiskSliceSize=max
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+WizardStyle=modern
+ExtraDiskSpaceRequired=2147483648
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Shortcuts:"
+
+[Files]
+Source: "{#Stage}\Start ATLAS.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Stage}\Stop ATLAS.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Stage}\atlas.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Stage}\NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Stage}\xampp\*"; DestDir: "{app}\xampp"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Stage}\ollama\*"; DestDir: "{app}\ollama"; Flags: ignoreversion recursesubdirs createallsubdirs
+; AI model files are already compressed: store them as they are (much faster)
+Source: "{#Stage}\models\*"; DestDir: "{app}\models"; Flags: ignoreversion recursesubdirs createallsubdirs nocompression
+
+[Icons]
+Name: "{autoprograms}\ATLAS - Mnemo AI"; Filename: "{app}\Start ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"
+Name: "{autoprograms}\Stop ATLAS"; Filename: "{app}\Stop ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"
+Name: "{autodesktop}\ATLAS - Mnemo AI"; Filename: "{app}\Start ATLAS.bat"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\Start ATLAS.bat"; Description: "Start ATLAS now"; Flags: postinstall nowait skipifsilent shellexec
+
+[UninstallRun]
+Filename: "{app}\Stop ATLAS.bat"; Flags: runhidden waituntilterminated; RunOnceId: "StopAtlas"
+
+[UninstallDelete]
+Type: files; Name: "{app}\.location"

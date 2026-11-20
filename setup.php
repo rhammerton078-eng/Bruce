@@ -81,15 +81,16 @@ $add('Tesseract OCR (optional)', (bool)$tess, $tess ?: 'Optional: reads text ins
 
 $requiredOk = !array_filter($checks, fn($c) => $c['required'] && !$c['ok']);
 ?><!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ATLAS · Setup</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ATLAS · Mnemo setup</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/css/app.css">
 <style>body{overflow:auto}.wrap{max-width:760px;margin:40px auto;padding:0 20px}.row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
 .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700}.ok{background:rgba(52,211,153,.15);color:var(--ok)}.no{background:rgba(248,113,113,.15);color:var(--bad)}.opt{background:var(--panel-3);color:var(--text-3)}
 code{font:12px var(--mono);background:var(--panel-3);padding:2px 6px;border-radius:4px}</style></head>
 <body><div class="wrap">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-    <div style="width:42px;height:42px;border-radius:12px;background:radial-gradient(circle at 30% 30%,#7dd3fc,#0ea5e9 45%,#0c4a6e);box-shadow:0 0 24px rgba(56,189,248,.4)"></div>
-    <div><div style="font-size:20px;font-weight:650">ATLAS setup</div><div class="muted">Autonomous Knowledge Reconstruction Engine · Mnemo</div></div>
+    <img src="assets/icon.svg" alt="" style="width:46px;height:46px;border-radius:12px;box-shadow:0 0 24px rgba(34,211,238,.4)">
+    <div><div style="font-size:20px;font-weight:650">ATLAS · Mnemo setup</div><div class="muted">Autonomous Knowledge Reconstruction Engine · Mnemo</div></div>
   </div>
   <?php if ($msg): ?><div class="card" style="border-color:rgba(52,211,153,.4);margin-bottom:14px">✅ <?= htmlspecialchars($msg) ?></div><?php endif; ?>
   <?php if ($err): ?><div class="card" style="border-color:rgba(248,113,113,.4);margin-bottom:14px">❌ <?= htmlspecialchars($err) ?></div><?php endif; ?>

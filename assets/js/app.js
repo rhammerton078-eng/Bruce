@@ -870,7 +870,13 @@ function refreshAll() { refreshStatus(); loadTree(); if (S.view === 'memory') lo
 async function openSettings() {
   const s = await api('settings'); const o = S.status?.ollama || {};
   const opt = (sel, list) => [...new Set([sel, ...(list || [])])].filter(Boolean).map(m => `<option ${m === sel ? 'selected' : ''}>${esc(m)}</option>`).join('');
+  const app = s.app || {}, hasMnemo = (o.models || []).some(m => /^mnemo:/.test(m));
   $('#settingsBody').innerHTML = `
+    <div class="card" style="display:flex;gap:14px;align-items:center"><img class="about-logo" src="assets/icon.svg" alt="">
+      <div style="flex:1"><b style="font-size:15px">${esc(app.name || 'ATLAS · Mnemo')}</b> <span class="badge">v${esc(app.version || '1.0.0')}</span>
+        <div class="muted" style="font-size:12px">An offline AI that starts knowing nothing and learns from what you give it.${app.author ? ' Created by ' + esc(app.author) + '.' : ''}</div>
+        <div class="muted" style="font-size:11.5px;margin-top:4px">Powered by Qwen 2.5 (Alibaba Cloud, Apache 2.0) · Ollama (MIT) · nomic-embed-text (Apache 2.0) · <a href="NOTICE.txt" target="_blank">licenses</a></div></div></div>
+    ${hasMnemo && !/^mnemo:/.test(s.ollama.chat_model) ? `<div class="card" style="display:flex;gap:10px;align-items:center;border-color:rgba(251,191,36,.45)"><div style="flex:1;font-size:13px"><b>Mnemo's own model is installed.</b> <span class="muted">Use <code>${esc((o.models || []).find(m => /^mnemo:/.test(m)))}</code> as the chat model.</span></div><button class="btn sm primary" id="useMnemo">Use it</button></div>` : ''}
     <div class="card" style="display:flex;gap:10px;align-items:center"><span class="dot ${o.online ? 'ok' : 'bad'}"></span><div style="flex:1"><b>Ollama</b> <span class="muted">${esc(s.ollama.url)}</span><div class="muted" style="font-size:12px">${o.online ? (o.models.length + ' models installed') : 'Not running. Install from ollama.com and start it.'}</div></div></div>
     <label class="fld">Chat & reasoning model <select class="select" id="setChat">${opt(s.ollama.chat_model, o.models)}</select></label>
     <label class="fld">Embedding model <select class="select" id="setEmbed">${opt(s.ollama.embed_model, o.models)}</select><span class="muted" style="font-size:11.5px">Changing this later requires re-processing existing sources.</span></label>
@@ -882,6 +888,7 @@ async function openSettings() {
       <dt>GD (image similarity)</dt><dd>${s.gd ? '<span class="badge ok">enabled</span>' : '<span class="badge">enable extension=gd</span>'}</dd>
       <dt>Native vector index</dt><dd>${s.vector.enabled ? '<span class="badge ok">on</span>' : s.vector.supported ? '<span class="badge">available</span>' : '<span class="badge">MariaDB 11.7+</span>'}</dd></dl>
       <div class="muted" style="font-size:11.5px;margin-top:8px">Set full paths in <code>config.php</code> if installed but not detected. <a href="setup.php">Open setup check →</a></div></div>`;
+  if ($('#useMnemo')) $('#useMnemo').onclick = () => { const m = (o.models || []).find(x => /^mnemo:7b-trained/.test(x)) || (o.models || []).find(x => /^mnemo:/.test(x)); $('#setChat').value = m; $('#useMnemo').closest('.card').remove(); toast('Click Save to switch to ' + m, 'ok'); };
   $('#settingsModal').classList.add('show');
 }
 $('#btnSettings').onclick = openSettings;
