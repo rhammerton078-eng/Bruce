@@ -29,6 +29,18 @@ final class Package
         return $files;
     }
 
+    /** Is the job's background process still running? (no pid yet: allow 30 s to start) */
+    private static function alive(array $job): bool
+    {
+        $pid = (int)($job['pid'] ?? 0);
+        if (!$pid) return time() - (int)($job['ts'] ?? 0) < 30;
+        if (PHP_OS_FAMILY === 'Windows') {
+            $o = (string)@shell_exec('tasklist /FI "PID eq ' . $pid . '" /FO CSV /NH 2>NUL');
+            return stripos($o, 'php') !== false;
+        }
+        return function_exists('posix_kill') ? @posix_kill($pid, 0) : time() - (int)($job['ts'] ?? 0) < 120;
+    }
+
     private static function isccFound(): bool
     {
         foreach ([getenv('ProgramFiles'), getenv('ProgramFiles(x86)'), getenv('LOCALAPPDATA') . '/Programs'] as $d)
@@ -43,6 +55,11 @@ final class Package
         foreach ($files as $f) $size += (int)@filesize($f);
         $default = PHP_OS_FAMILY === 'Windows' ? (is_dir('D:/') ? 'D:\\ATLAS-Downloads' : 'C:\\ATLAS-Downloads') : sys_get_temp_dir() . '/ATLAS-Downloads';
         $job = json_decode((string)@file_get_contents(self::jobFile()), true);
+        // A job whose background process is gone (PC restarted, crashed, old version) is shown as stopped, never as "working" forever
+        if (is_array($job) && ($job['state'] ?? '') === 'working' && !self::alive($job)) {
+            $job['state'] = 'error'; $job['msg'] = 'The download stopped (the PC was restarted or it never started). Click Download to try again.';
+            @file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        }
         $db = Db::get();
         return [
             'base_ready' => (bool)$files, 'base_dir' => str_replace('/', '\\', self::baseDir()), 'base_size' => $size,
@@ -85,7 +102,7 @@ final class Package
         $build = !self::baseFiles();
         if ($build && PHP_OS_FAMILY === 'Windows' && !self::isccFound()) throw new RuntimeException('One free tool is missing: install Inno Setup 7 from jrsoftware.org/isdl.php, then click Download again.');
         $job = json_decode((string)@file_get_contents(self::jobFile()), true);
-        if (is_array($job) && ($job['state'] ?? '') === 'working' && time() - (int)($job['ts'] ?? 0) < (!empty($job['build']) ? 3600 : 120)) throw new RuntimeException('A download is already being prepared.');
+        if (is_array($job) && ($job['state'] ?? '') === 'working' && self::alive($job)) throw new RuntimeException('A download is already being prepared. Open the progress at the bottom right, or click Cancel there.');
         if (!is_dir($dest) && !@mkdir($dest, 0777, true)) throw new RuntimeException("Cannot create the folder $dest. Check the drive letter.");
         $need = $build ? 11 * 1073741824 : 0;
         foreach (self::baseFiles() as $f) $need += (int)filesize($f);
