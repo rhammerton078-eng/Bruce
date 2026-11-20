@@ -24,7 +24,8 @@ final class Package
     public static function baseFiles(bool $vision = false): array
     {
         $d = self::baseDir($vision);
-        if (!is_file("$d/ATLAS-Setup.exe")) return [];
+        // Only an installer whose build finished successfully (build.ok is written last)
+        if (!is_file("$d/ATLAS-Setup.exe") || !is_file("$d/build.ok") || filemtime("$d/build.ok") < filemtime("$d/ATLAS-Setup.exe")) return [];
         $files = ["$d/ATLAS-Setup.exe"];
         foreach (glob("$d/ATLAS-Setup-*.bin") ?: [] as $f) $files[] = $f;
         return $files;
@@ -193,6 +194,8 @@ final class Package
                     }
                 }
                 fclose($in); fclose($out);
+                clearstatcache();
+                if (filesize($folder . DIRECTORY_SEPARATOR . basename($f)) !== filesize($f)) throw new RuntimeException('Copy of ' . basename($f) . ' is incomplete. Is the drive full?');
             }
 
             file_put_contents($folder . DIRECTORY_SEPARATOR . 'READ ME FIRST.txt', str_replace("\n", "\r\n",
@@ -215,6 +218,11 @@ final class Package
     /** Runs "Build ATLAS installer.bat newborn" and turns its progress into 2-75 %. */
     private static function buildBase(callable $save, bool $vision): void
     {
+        // Only ONE build at a time on this PC (two builds would overwrite each other's files)
+        @mkdir('C:/ATLAS-build', 0777, true);
+        $lock = fopen((PHP_OS_FAMILY === 'Windows' ? 'C:/ATLAS-build' : sys_get_temp_dir()) . '/build.lock', 'c');
+        while ($lock && !flock($lock, LOCK_EX | LOCK_NB)) { $save(['msg' => 'Waiting for another download to finish preparing…']); sleep(5); }
+        if (self::baseFiles($vision)) { if ($lock) flock($lock, LOCK_UN); return; }   // the other download already built it
         $bat = realpath(__DIR__ . '/../installer/Build ATLAS installer.bat');
         $log = atlas_config()['storage_root'] . '/logs/build.log';
         @mkdir(dirname($log), 0777, true);
@@ -242,6 +250,7 @@ final class Package
             }
         }
         proc_close($proc);
+        if ($lock) flock($lock, LOCK_UN);
     }
 
     private static function dirSize(string $dir): int

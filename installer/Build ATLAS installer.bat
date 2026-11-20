@@ -97,8 +97,12 @@ echo   Compiling the installer (this takes a while)...
 REM Newborn = the base for "Download my AI" in ATLAS; MY Mnemo = a complete copy of this PC's AI
 if "%MODE%"=="keep" ( set "OUT=%BUILD%\output" ) else ( set "OUT=%BUILD%\base" )
 if "%MODELS%"=="lite" set "OUT=%OUT%-lite"
+REM Remove the previous installer first; build.ok is written only after a successful compile
+mkdir "%OUT%" 2>nul
+del /Q "%OUT%\build.ok" "%OUT%\ATLAS-Setup*" 2>nul
 "%ISCC%" /DStage="%STAGE%" /O"%OUT%" "%HERE%ATLAS.iss"
 if errorlevel 1 ( echo   [!] Inno Setup failed - see the messages above. & pause & exit /b 1 )
+>"%OUT%\build.ok" echo ok
 if "%MODE%"=="keep" "%SRC_XAMPP%\php\php.exe" "%A%\tools\export-package.php" "%OUT%"
 if "%MODE%"=="keep" if "%MODELS%"=="lite" "%SRC_XAMPP%\php\php.exe" -r "$f=$argv[1].'/mnemo-package/identity.json'; $j=json_decode(file_get_contents($f),true); $j['vision']=false; file_put_contents($f,json_encode($j,JSON_PRETTY_PRINT));" "%OUT%"
 echo.
