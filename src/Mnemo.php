@@ -19,6 +19,28 @@ TXT;
     public const DONT_KNOW = "I don't know that yet. Nobody has taught me about it. Upload a document about it, or teach me directly with `remember:` or `define:`.";
 
     /** Strict (baby) mode: with nothing relevant in memory, Mnemo must not answer from the model's own knowledge. */
+    /** The AI's display name (set when an AI is downloaded as software). The model is always Mnemo. */
+    public static function aiName(): string
+    {
+        $n = trim((string)(atlas_config()['app']['ai_name'] ?? ''));
+        return $n !== '' ? $n : 'Mnemo';
+    }
+
+    private static function persona(): string
+    {
+        $n = self::aiName();
+        return ($n !== 'Mnemo' ? "Your name is $n, powered by Mnemo (the AI inside ATLAS). If asked who you are, say you are $n, powered by Mnemo.\n" : '') . self::PERSONA;
+    }
+
+    /** Direct answer to "who are you?" questions (needs no sources, also in strict mode). */
+    public static function identityAnswer(string $q): ?string
+    {
+        if (!preg_match('/\b(who are you|what(\'s| is) your name|what are you|introduce yourself|tell me about yourself|sino ka|ano ka|ano ang pangalan mo)\b/i', $q)) return null;
+        $n = self::aiName();
+        $who = $n === 'Mnemo' ? "I'm Mnemo, the AI inside ATLAS" : "I'm $n, powered by Mnemo, the AI inside ATLAS";
+        return "$who. I started knowing nothing, and I learn only from what I'm taught: files, pictures and facts. I always show where my answers come from, and everything runs offline on this computer.";
+    }
+
     public static function strict(): bool
     {
         return Maintenance::setting('baby.strict', '1') === '1';
@@ -198,7 +220,7 @@ TXT;
             $ctx .= "\nA previous answer the user APPROVED for a similar question (\"{$approved['question']}\"). Reuse it where it fits, but still cite sources:\n" . mb_substr($approved['answer'], 0, 2500) . "\n";
         }
         if ($ctx === '') $ctx = '(no sources found)';
-        $msgs = [['role' => 'system', 'content' => self::PERSONA]];
+        $msgs = [['role' => 'system', 'content' => self::persona()]];
         foreach (array_slice($history, -6) as $h) $msgs[] = ['role' => $h['role'], 'content' => mb_substr($h['content'], 0, 1500)];
         $msgs[] = ['role' => 'user', 'content' => "Sources:\n$ctx\nQuestion: $q"];
         return $msgs;

@@ -38,6 +38,9 @@ Source: "{#Stage}\atlas.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Stage}\NOTICE.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Stage}\xampp\*"; DestDir: "{app}\xampp"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Stage}\ollama\*"; DestDir: "{app}\ollama"; Flags: ignoreversion recursesubdirs createallsubdirs
+; "Download my AI": the memory and the name sit next to ATLAS-Setup.exe and are picked up at install time
+Source: "{src}\mnemo-package\memory.atlascard"; DestDir: "{app}\package"; Flags: external skipifsourcedoesntexist ignoreversion
+Source: "{src}\mnemo-package\identity.json"; DestDir: "{app}\package"; Flags: external skipifsourcedoesntexist ignoreversion
 ; AI model files are already compressed: store them as they are (much faster)
 Source: "{#Stage}\models\*"; DestDir: "{app}\models"; Flags: ignoreversion recursesubdirs createallsubdirs nocompression
 
@@ -54,3 +57,4 @@ Filename: "{app}\Stop ATLAS.bat"; Flags: runhidden waituntilterminated; RunOnceI
 
 [UninstallDelete]
 Type: files; Name: "{app}\.location"
+Type: filesandordirs; Name: "{app}\package"

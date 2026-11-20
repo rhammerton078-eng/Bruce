@@ -23,3 +23,4 @@ desktop.ini
 storage/logs/
 storage/worker.json
 storage/worker.lock
+storage/package.json

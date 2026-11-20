@@ -3,11 +3,14 @@ setlocal EnableExtensions
 title ATLAS - starting
 REM Installed ATLAS (ATLAS-Setup.exe). Everything lives in this folder:
 REM   xampp\ (web server + MySQL + ATLAS)   ollama\ (AI program)   models\ (AI brain)
-REM It uses its own ports (web 8765, MySQL 3307) so it never clashes with another XAMPP.
+REM Uses its own ports (web 8765, MySQL 3307) so it never clashes with another XAMPP.
+REM The AI, memory, web server and learner run hidden; ATLAS shows their status (bottom right).
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 cd /d "%ROOT%"
 set "XAMPP=%ROOT%\xampp"
+set "APP=%XAMPP%\htdocs\atlas"
+set "LOGS=%APP%\storage\logs"
 set "WEB_PORT=8765"
 set "MYSQL_PORT=3307"
 set "URL=http://localhost:%WEB_PORT%/atlas/"
@@ -15,16 +18,17 @@ set "OLLAMA_MODELS=%ROOT%\models"
 set "OLLAMA_KEEP_ALIVE=30m"
 set "OLLAMA_FLASH_ATTENTION=1"
 set "OLLAMA_KV_CACHE_TYPE=q8_0"
+mkdir "%LOGS%" 2>nul
 
 echo.
-echo   ATLAS - Mnemo AI
+echo   Starting your AI...
 echo   -------------------------------------------------------------
 
-REM First run, or the folder moved: let XAMPP fix its own paths
+REM First start, or the folder moved: let XAMPP fix its own paths
 set "LAST="
 if exist "%ROOT%\.location" set /p LAST=<"%ROOT%\.location"
 if /I not "%LAST%"=="%ROOT%" (
-  echo   Preparing the web server for this folder ^(first start only^)...
+  echo   Preparing for this folder ^(first start only^)...
   pushd "%XAMPP%"
   echo 1| call setup_xampp.bat >nul 2>&1
   popd
@@ -32,20 +36,22 @@ if /I not "%LAST%"=="%ROOT%" (
 )
 
 netstat -ano | findstr /R /C:":%MYSQL_PORT% .*LISTENING" >NUL
-if errorlevel 1 ( echo   Starting memory ^(MySQL^)... & start "ATLAS MySQL" /MIN /D "%XAMPP%" mysql_start.bat ) else ( echo   [ok] memory running )
+if errorlevel 1 ( echo   Starting memory... & powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\mysql\bin\mysqld.exe' -ArgumentList '--defaults-file=%XAMPP%\mysql\bin\my.ini','--standalone' -WorkingDirectory '%XAMPP%' -WindowStyle Hidden" )
 netstat -ano | findstr /R /C:":%WEB_PORT% .*LISTENING" >NUL
-if errorlevel 1 ( echo   Starting web server... & start "ATLAS Apache" /MIN /D "%XAMPP%" apache_start.bat ) else ( echo   [ok] web server running )
+if errorlevel 1 ( echo   Starting web server... & powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\apache\bin\httpd.exe' -WorkingDirectory '%XAMPP%' -WindowStyle Hidden" )
 
 taskkill /IM "ollama app.exe" /F >nul 2>&1
 taskkill /IM ollama.exe /F >nul 2>&1
-timeout /t 2 >nul
+timeout /t 1 >nul
 echo   Starting the AI...
-start "ATLAS Ollama" /MIN "%ROOT%\ollama\ollama.exe" serve
+powershell -NoProfile -Command "Start-Process -FilePath '%ROOT%\ollama\ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\ollama-out.log' -RedirectStandardError '%LOGS%\ollama.log'"
 
-tasklist /V /FI "WINDOWTITLE eq ATLAS worker*" | find /I "php.exe" >NUL
-if errorlevel 1 start "ATLAS worker" /MIN /D "%XAMPP%\htdocs\atlas" "%XAMPP%\php\php.exe" worker\ingest.php --watch
+REM First start: database, the memory that came with it, and the AI's name
+"%XAMPP%\php\php.exe" "%APP%\tools\first-run.php" "%ROOT%\package"
 
-echo   Opening ATLAS...
+REM Background learner (one at a time; it exits by itself if one is already running)
+powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\php\php.exe' -ArgumentList 'worker\ingest.php','--watch' -WorkingDirectory '%APP%' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\worker-out.log' -RedirectStandardError '%LOGS%\worker-err.log'"
+
 for /L %%i in (1,1,40) do (
   curl -s -o NUL -m 2 %URL%setup.php && goto :open
   timeout /t 1 >NUL

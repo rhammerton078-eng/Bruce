@@ -6,7 +6,8 @@ REM  Builds ATLAS-Setup.exe: ONE installer with the web server, MySQL,
 REM  ATLAS, the AI program (Ollama) and the AI models. Run it on the PC
 REM  where ATLAS already works (C:\xampp + C:\ATLAS-AI).
 REM  Needs Inno Setup 7 or 6 (free): https://jrsoftware.org/isdl.php
-REM  Output: C:\ATLAS-build\output\ATLAS-Setup.exe (+ .bin parts, about 10-14 GB)
+REM  Output: 1 = C:\ATLAS-build\base   (used by the "Download my AI" button in ATLAS)
+REM          2 = C:\ATLAS-build\output (a complete copy of this PC's AI)
 REM =====================================================================
 set "HERE=%~dp0"
 set "SRC_XAMPP=C:\xampp"
@@ -27,7 +28,7 @@ if not exist "%SRC_AI%\models\manifests" ( echo   [!] AI models not found in %SR
 
 echo.
 echo   Which Mnemo should the installer contain?
-echo     1 = Newborn Mnemo  (empty memory - for giving ATLAS to other people)
+echo     1 = Base for the "Download my AI" button  (empty memory - do this once)
 echo     2 = MY Mnemo       (everything it has learned on this PC)
 choice /C 12 /N /M "  Press 1 or 2: "
 if errorlevel 2 ( set "MODE=keep" ) else ( set "MODE=newborn" )
@@ -57,11 +58,11 @@ if "%MODE%"=="keep" (
 echo   [3/5] Copying ATLAS ...
 set "A=%SRC_XAMPP%\htdocs\atlas"
 if "%MODE%"=="keep" (
-  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\backups" "%A%\storage\exports" >nul
+  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF worker.json worker.lock package.json /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\logs" >nul
 ) else (
-  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF cards.json config.local.php allow_lan /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\uploads" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\cards" "%A%\storage\inbox" >nul
+  robocopy "%A%" "%STAGE%\xampp\htdocs\atlas" /E /NFL /NDL /NJH /NJS /NP /XF cards.json config.local.php allow_lan worker.json worker.lock package.json /XD "%A%\.git" "%A%\docs\presentation" "%A%\storage\uploads" "%A%\storage\backups" "%A%\storage\exports" "%A%\storage\cards" "%A%\storage\inbox" "%A%\storage\logs" >nul
 )
-for %%D in (uploads backups exports cards inbox) do mkdir "%STAGE%\xampp\htdocs\atlas\storage\%%D" 2>nul
+for %%D in (uploads backups exports cards inbox logs) do mkdir "%STAGE%\xampp\htdocs\atlas\storage\%%D" 2>nul
 "%SRC_XAMPP%\php\php.exe" "%HERE%make-config.php" "%A%\config.local.php" "%STAGE%\xampp\htdocs\atlas\config.local.php" %MODE%
 
 echo   [4/5] Setting ATLAS's own ports (web 8765, MySQL 3307) ...
@@ -81,12 +82,15 @@ robocopy "%SRC_AI%\models" "%STAGE%\models" /E /NFL /NDL /NJH /NJS /NP >nul
 if "%MODE%"=="keep" ( echo   You can start MySQL again now. )
 echo.
 echo   Compiling the installer (this takes a while)...
-"%ISCC%" /DStage="%STAGE%" /O"%BUILD%\output" "%HERE%ATLAS.iss"
+REM Newborn = the base for "Download my AI" in ATLAS; MY Mnemo = a complete copy of this PC's AI
+if "%MODE%"=="keep" ( set "OUT=%BUILD%\output" ) else ( set "OUT=%BUILD%\base" )
+"%ISCC%" /DStage="%STAGE%" /O"%OUT%" "%HERE%ATLAS.iss"
 if errorlevel 1 ( echo   [!] Inno Setup failed - see the messages above. & pause & exit /b 1 )
 echo.
 echo   -------------------------------------------------------------
-echo   [ok] Done:  %BUILD%\output\ATLAS-Setup.exe  (+ ATLAS-Setup-*.bin)
+echo   [ok] Done:  %OUT%\ATLAS-Setup.exe  (+ ATLAS-Setup-*.bin)
 echo   Keep ALL files from that folder together when you copy them.
 echo   -------------------------------------------------------------
-explorer "%BUILD%\output"
+if "%MODE%"=="newborn" echo   The "Download my AI" button in ATLAS is now ready to use.
+explorer "%OUT%"
 pause

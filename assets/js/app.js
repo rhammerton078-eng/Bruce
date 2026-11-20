@@ -549,7 +549,7 @@ function md(text, sources) {
 
 function chatEmpty() {
   $('#chatInner').innerHTML = `<div class="chat-empty">
-    <div class="orb"><img src="assets/icon.svg" alt="Mnemo"></div><h3>Hi, I'm Mnemo</h3>
+    <div class="orb"><img src="assets/icon.svg" alt="Mnemo"></div><h3>Hi, I'm ${esc(aiName())}</h3><div class="who" ${aiName() === 'Mnemo' ? 'hidden' : ''}>powered by Mnemo</div>
     <div>I answer only from what you've taught me, and I always show my sources.</div>
     <div class="suggest">
       <div class="card" data-q="Give me an overview of everything I've uploaded so far."><b>Overview</b>Summarize my knowledge base</div>
@@ -876,6 +876,72 @@ async function kickProcessing(manual) {
   if (completedAny || manual) { loadGraph(); if (S.view === 'documents') loadDocuments(); setTimeout(() => { if (!S.selectedId && $('#inspTitle').textContent === 'Overview') showOverview(); }, 600); }
 }
 
+// ---------------------------------------------------------------- "Download my AI" (installer + this memory + a name)
+const dl = {timer: null};
+function aiName() { return (S.status && S.status.ai_name) || 'Mnemo'; }
+function applyAiName() {
+  const n = aiName(), custom = n !== 'Mnemo';
+  document.title = custom ? `${n} · ATLAS` : 'ATLAS · Mnemo';
+  const b = $('.topbar .brand'); if (b) b.innerHTML = custom ? `${esc(n)} <small>powered by Mnemo</small>` : 'ATLAS <small>Mnemo AI</small>';
+  const h = $('.chat-empty h3'); if (h) h.textContent = `Hi, I'm ${n}`;
+  const sub = $('.chat-empty .who'); if (sub) sub.hidden = !custom;
+}
+function dlEnsure() {
+  let m = $('#dlModal'); if (m) return m;
+  m = document.createElement('div'); m.className = 'modal-bg'; m.id = 'dlModal';
+  m.innerHTML = '<div class="modal dl"><div class="modal-h"><span style="display:flex;gap:8px;align-items:center">' + icon('download', 'sm') + 'Download my AI</span><button class="btn ghost sm icon" data-close>' + icon('x', 'sm') + '</button></div><div class="modal-b" id="dlBody"></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) { m.classList.toggle('show', false); clearInterval(dl.timer); } });
+  return m;
+}
+async function openDownload() {
+  dlEnsure().classList.add('show');
+  $('#dlBody').innerHTML = '<div class="empty" style="padding:40px">Loading…</div>';
+  let info;
+  try { info = await api('package_info'); } catch (e) { $('#dlBody').innerHTML = `<div class="alert critical">${esc(e.message)}</div>`; return; }
+  if (info.job && info.job.state === 'working') return dlProgress();
+  const gb = b => (b / 1073741824).toFixed(1) + ' GB';
+  $('#dlBody').innerHTML = `
+    <div class="dl-hero"><img src="assets/icon.svg" alt=""><div><b>Turn what you taught into software</b>
+      <div class="muted">One installer with the AI and everything it knows right now (${fmtNum(info.knows.concepts)} concepts from ${fmtNum(info.knows.sources)} sources). Install it on any PC and it answers from what you taught.</div></div></div>
+    <label class="fld">What's the name of your AI? <input class="input" id="dlName" maxlength="40" value="${esc(info.ai_name)}" placeholder="e.g. Bruce AI"></label>
+    <div class="dl-fixed"><span>${icon('cpu', 'sm')} Model: <b>Mnemo</b> 🔒</span><span><img src="assets/icon.svg" alt=""> Logo: <b>M</b> 🔒</span><span class="muted">These stay the same.</span></div>
+    <label class="fld">Save to <input class="input" id="dlDest" value="${esc(info.default_dest)}"></label>
+    <div class="muted" style="font-size:12px;margin-top:-4px">${info.base_ready ? 'About ' + gb(info.base_size) + '. Use a drive with enough space, like D:\\ or a USB drive.' : ''}</div>
+    ${info.base_ready ? '' : `<div class="alert warn" style="margin-top:12px"><div><b>One-time step first.</b> Build the base installer once (it holds the web server and the AI):<br>
+      run <code>C:\\xampp\\htdocs\\atlas\\installer\\Build ATLAS installer.bat</code> and press <b>1</b>. It goes to <code>${esc(info.base_dir)}</code>. After that, this button works any time.</div></div>`}
+    ${info.job && info.job.state === 'done' ? `<div class="alert ok" style="margin-top:12px"><div>Last download: <code>${esc(info.job.folder)}</code></div></div>` : ''}
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="dlGo" ${info.base_ready ? '' : 'disabled'}>${icon('download', 'sm')}Download</button></div>`;
+  $('#dlName').focus(); $('#dlName').select();
+  $('#dlGo').onclick = async () => {
+    const b = $('#dlGo'); b.disabled = true; b.textContent = 'Preparing…';
+    try { await api('package_create', {name: $('#dlName').value, dest: $('#dlDest').value}, 'POST'); dlProgress(); }
+    catch (e) { b.disabled = false; b.innerHTML = icon('download', 'sm') + 'Download'; toast(esc(e.message), 'bad'); }
+  };
+}
+function dlProgress() {
+  const draw = async () => {
+    let info; try { info = await api('package_info'); } catch { return; }
+    const j = info.job || {};
+    if (j.state === 'done') {
+      clearInterval(dl.timer);
+      $('#dlBody').innerHTML = `<div class="dl-done"><img src="assets/icon.svg" alt=""><h3>${esc(j.name)} is ready</h3>
+        <div class="muted">Copy this whole folder to the other PC (USB drive), then double-click <b>ATLAS-Setup.exe</b>:</div>
+        <div class="dl-path"><code id="dlPath">${esc(j.folder)}</code><button class="btn sm" id="dlCopy">${icon('copy', 'sm')}Copy path</button></div>
+        <div class="muted" style="font-size:12px">It contains the installer, the memory (${fmtNum(info.knows.concepts)} concepts) and the name. Instructions are in "READ ME FIRST.txt".</div>
+        <div style="margin-top:16px"><button class="btn primary" data-close>Done</button></div></div>`;
+      $('#dlCopy').onclick = () => { navigator.clipboard?.writeText(j.folder); toast('Path copied', 'ok'); };
+      return;
+    }
+    if (j.state === 'error') { clearInterval(dl.timer); $('#dlBody').innerHTML = `<div class="alert critical"><div>${esc(j.msg)}</div></div><div style="margin-top:12px"><button class="btn" id="dlBack">Back</button></div>`; $('#dlBack').onclick = openDownload; return; }
+    $('#dlBody').innerHTML = `<div class="dl-done"><img src="assets/icon.svg" alt=""><h3>Preparing ${esc(j.name || 'your AI')}…</h3>
+      <div class="progress dl-bar"><i style="width:${Math.max(2, j.pct || 0)}%"></i></div><b>${j.pct || 0}%</b>
+      <div class="muted">${esc(j.msg || '')}</div><div class="muted" style="font-size:12px;margin-top:8px">You can close this window and keep using ATLAS. Come back here to see when it is ready.</div></div>`;
+  };
+  draw(); clearInterval(dl.timer); dl.timer = setInterval(() => { if ($('#dlModal').classList.contains('show')) draw(); }, 1500);
+}
+$('#btnDownloadAI').onclick = openDownload;
+
 // ---------------------------------------------------------------- background parts (AI · Memory · Learner)
 const sysView = {log: 'learner', timer: null};
 async function refreshSystem(withLogs) {
@@ -933,6 +999,7 @@ async function refreshStatus() {
     $('#sbModel').innerHTML = o.online ? `${icon('cpu', 'sm')} ${esc(o.chat.name)}` : '';
     if (!S.processing && (S.status.pending.queued || S.status.pending.chunks_left || S.status.pending.embed_left || S.status.pending.claims_left) && ok) kickProcessing();
     renderStorageStatus(S.status.storage);
+    applyAiName();
     refreshSystem();
     renderBadges(S.status.badges);
     renderIdentity(S.status);

@@ -202,3 +202,11 @@ storage/                 uploads/, inbox/, backups/, cards/ (one folder per extr
   The installed copy uses its own ports (web 8765, MySQL 3307) and lives in `C:\ATLAS`.
 - License note: `qwen2.5:7b`, `14b`, `32b` and `nomic-embed-text` are Apache 2.0. `qwen2.5:3b` and `qwen2.5vl:3b` use the
   Qwen Research license (non-commercial). Turn off the vision model before selling ATLAS.
+
+## Download my AI (turn what you taught into software)
+
+The **Download my AI** button (top bar) asks for your AI's name and saves a folder `<Name> - Setup` with the installer,
+the memory it has right now and the name. The model is always Mnemo and the logo stays the same. On another PC:
+copy the folder, run `ATLAS-Setup.exe`, open the icon with your AI's name. On first start it inserts the memory and
+answers "I'm <Name>, powered by Mnemo". One-time step: build the base installer with
+`installer\Build ATLAS installer.bat` → **1** (goes to `C:\ATLAS-build\base`).

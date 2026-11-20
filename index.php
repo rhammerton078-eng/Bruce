@@ -70,6 +70,7 @@ $v = (string)filemtime(__DIR__ . '/assets/js/app.js');
       <div class="card-menu glass" id="cardMenu" hidden></div>
       <div class="pill-status" id="growPill" title="Mnemo's growth"><i data-icon="sprout"></i><span id="growText">Newborn</span></div>
       <div class="pill-status" id="mnemoStatus" title="Local AI status"><span class="dot"></span><span>Mnemo</span></div>
+      <button class="btn" id="btnDownloadAI" title="Download my AI as software"><i data-icon="download"></i>Download my AI</button>
       <button class="btn primary" id="btnUpload"><i data-icon="upload"></i>Teach</button>
     </div>
   </header>

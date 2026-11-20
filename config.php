@@ -8,6 +8,7 @@ $cfg = [
         'name'    => 'ATLAS · Mnemo',
         'version' => '1.0.0',
         'author'  => 'Robert Bruce Jr. C. Hammerton',
+        'ai_name' => 'Mnemo',   // display name; a downloaded AI gets the name chosen in "Download my AI"
     ],
     'db' => [
         'host' => '127.0.0.1',
@@ -41,6 +42,10 @@ $cfg = [
     'retrieval' => [
         'top_k' => 8,
         'min_score' => 0.25,
+    ],
+    // "Download my AI": the base installer built once with installer\Build ATLAS installer.bat (choose 1)
+    'package' => [
+        'base_dir' => 'C:/ATLAS-build/base',
     ],
     'storage' => __DIR__ . '/storage',
 ];

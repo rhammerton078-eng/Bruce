@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use Atlas\{Cards, Db, Graph, Growth, Ingest, Insights, Maintenance, Media, Mnemo, Nightly, Ollama, Practice, Quality, System, Truth, Tutorial, Vector};
+use Atlas\{Cards, Db, Graph, Growth, Ingest, Insights, Maintenance, Media, Mnemo, Nightly, Ollama, Package, Practice, Quality, System, Truth, Tutorial, Vector};
 
 $action = $_GET['action'] ?? '';
 @set_time_limit(900); // slow CPUs: AI answers can take minutes
@@ -29,7 +29,7 @@ if (PHP_SAPI !== 'cli' && !in_array($remote, ['127.0.0.1', '::1'], true) && !is_
 }
 $writes = ['card_create', 'card_switch', 'card_rename', 'card_remove', 'card_export', 'card_import', 'curiosity_answer', 'curiosity_skip', 'wonder', 'lesson_teach', 'lesson_exam', 'lesson_delete', 'baby_settings', 'tutorial_save', 'demo_load', 'demo_remove', 'contradiction_resolve', 'review_decide', 'merge', 'merge_undo', 'hypothesis_decide', 'truth_scan', 'golden_add', 'golden_delete', 'golden_toggle', 'golden_run',
     'self_quiz_run', 'quiz_promote', 'approved_delete', 'watch_add', 'watch_delete', 'watch_check', 'watch_read', 'card_review', 'cards_generate', 'card_delete',
-    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
+    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'package_create', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
 if (in_array($action, $writes, true) && $method !== 'POST') json_out(['error' => 'POST required'], 405);
 
 try {
@@ -56,7 +56,7 @@ try {
             $gs = $g->status();
             $badges['questions'] = $gs['questions_pending'];
             $reg = Cards::registry();
-            json_out(['counts' => array_map('intval', $counts), 'badges' => $badges,
+            json_out(['counts' => array_map('intval', $counts), 'ai_name' => Mnemo::aiName(), 'badges' => $badges,
                 'growth' => ['level' => $gs['level'], 'stage' => $gs['stage'], 'xp' => $gs['xp'], 'progress' => $gs['progress'], 'level_up' => $levelUp],
                 'card' => ['id' => $reg['active'], 'name' => $reg['cards'][$reg['active']]['name'], 'count' => count($reg['cards'])], 'pending' => (new Ingest())->pending(), 'ollama' => (new Ollama())->status(),
                 'storage' => ['level' => $st['level'], 'warnings' => array_values(array_filter($st['warnings'], fn($w) => $w['level'] !== 'info')),
@@ -267,6 +267,9 @@ try {
                 if ($cmd = $mnemo->parseCommand($q)) {
                     $answer = $mnemo->teach($cmd['cmd'], $cmd['text']);
                     $send(['type' => 'token', 't' => $answer]);
+                } elseif ($who = Mnemo::identityAnswer($q)) {
+                    $answer = $who;
+                    $send(['type' => 'token', 't' => $answer]);
                 } else {
                     $asOf = $in('as_of') ?: null;
                     $chunks = $mnemo->retrieve($q, (int)atlas_config()['retrieval']['top_k'], $asOf, ((int)$in('collection', 0)) ?: null);
@@ -314,6 +317,13 @@ try {
         case 'nightly':
             session_write_close();
             json_out((new Nightly())->run());
+
+        case 'package_info':
+            json_out(Package::info());
+
+        case 'package_create':
+            session_write_close();
+            json_out(Package::start((string)$in('name', ''), (string)$in('dest', '')));
 
         case 'system':
             session_write_close();
