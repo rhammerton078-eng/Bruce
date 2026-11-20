@@ -40,11 +40,16 @@ if errorlevel 1 ( echo   Starting memory... & powershell -NoProfile -Command "St
 netstat -ano | findstr /R /C:":%WEB_PORT% .*LISTENING" >NUL
 if errorlevel 1 ( echo   Starting web server... & powershell -NoProfile -Command "Start-Process -FilePath '%XAMPP%\apache\bin\httpd.exe' -WorkingDirectory '%XAMPP%' -WindowStyle Hidden" )
 
-taskkill /IM "ollama app.exe" /F >nul 2>&1
-taskkill /IM ollama.exe /F >nul 2>&1
-timeout /t 1 >nul
-echo   Starting the AI...
-powershell -NoProfile -Command "Start-Process -FilePath '%ROOT%\ollama\ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\ollama-out.log' -RedirectStandardError '%LOGS%\ollama.log'"
+REM An AI that is already running on this PC (port 11434) is shared, never stopped
+netstat -ano | findstr /R /C:":11434 .*LISTENING" >NUL
+if errorlevel 1 ( echo   Starting the AI... & powershell -NoProfile -Command "Start-Process -FilePath '%ROOT%\ollama\ollama.exe' -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput '%LOGS%\ollama-out.log' -RedirectStandardError '%LOGS%\ollama.log'" ) else ( echo   [ok] AI already running )
+for /L %%i in (1,1,20) do (
+  netstat -ano | findstr /R /C:":11434 .*LISTENING" >NUL && goto :aiup
+  timeout /t 1 >NUL
+)
+:aiup
+REM Make sure Mnemo's own model exists in that AI
+if exist "%APP%\ai\Modelfile" "%ROOT%\ollama\ollama.exe" create mnemo:7b -f "%APP%\ai\Modelfile" >nul 2>&1
 
 REM First start: database, the memory that came with it, and the AI's name
 "%XAMPP%\php\php.exe" "%APP%\tools\first-run.php" "%ROOT%\package"

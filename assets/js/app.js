@@ -912,7 +912,7 @@ async function openDownload() {
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="dlGo">${icon('download', 'sm')}Download</button></div>`;
   $('#dlName').focus(); $('#dlName').select();
   $('#dlGo').onclick = async () => {
-    const b = $('#dlGo'); b.disabled = true; b.textContent = 'Preparing…';
+    const b = $('#dlGo'); b.disabled = true; b.textContent = 'Starting…';
     try { await api('package_create', {name: $('#dlName').value, dest: $('#dlDest').value}, 'POST'); dlProgress(); }
     catch (e) { b.disabled = false; b.innerHTML = icon('download', 'sm') + 'Download'; toast(esc(e.message), 'bad'); }
   };
@@ -933,8 +933,8 @@ function dlProgress() {
     }
     if (j.state === 'error') { clearInterval(dl.timer); $('#dlBody').innerHTML = `<div class="alert critical"><div>${esc(j.msg)}</div></div><div style="margin-top:12px"><button class="btn" id="dlBack">Back</button></div>`; $('#dlBack').onclick = openDownload; return; }
     $('#dlBody').innerHTML = `<div class="dl-done"><img src="assets/icon.svg" alt=""><h3>Preparing ${esc(j.name || 'your AI')}…</h3>
-      <div class="progress dl-bar"><i style="width:${Math.max(2, j.pct || 0)}%"></i></div><b>${j.pct || 0}%</b>
-      <div class="muted">${esc(j.msg || '')}</div><div class="muted" style="font-size:12px;margin-top:8px">You can close this window and keep using ATLAS. Come back here to see when it is ready.</div></div>`;
+      <div class="progress dl-bar"><i style="width:${Math.max(2, j.pct || 0)}%"></i></div><b style="font-size:18px">${j.pct || 0}%</b>${j.eta ? ` <span class="muted">· ${esc(j.eta)}</span>` : ''}
+      <div class="muted" style="margin-top:4px">${esc(j.msg || '')}</div><div class="muted" style="font-size:12px;margin-top:8px">You can close this window and keep using ATLAS. Come back here to see when it is ready.</div></div>`;
   };
   draw(); clearInterval(dl.timer); dl.timer = setInterval(() => { if ($('#dlModal').classList.contains('show')) draw(); }, 1500);
 }

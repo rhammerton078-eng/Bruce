@@ -77,10 +77,9 @@ final class Package
         $free = @disk_free_space($dest);
         if ($free !== false && $free < $need + 200 * 1048576) throw new RuntimeException('Not enough free space on that drive: ' . round($need / 1073741824, 1) . ' GB needed, ' . round($free / 1073741824, 1) . ' GB free.');
 
-        // The memory card (what this AI has learned, right now)
-        [$token] = Cards::export(Cards::activeId());
-        $job = ['state' => 'working', 'pct' => 0, 'msg' => 'Starting…', 'ts' => time(), 'name' => $name,
-                'dest' => $dest, 'card' => Cards::exportPath($token), 'files' => self::baseFiles(), 'build' => $build, 'folder' => ''];
+        // Everything else (memory card, first-time base build, copy) runs in the background with a progress bar
+        $job = ['state' => 'working', 'pct' => 0, 'msg' => 'Starting…', 'eta' => '', 'ts' => time(), 'started' => time(), 'name' => $name,
+                'dest' => $dest, 'card' => '', 'files' => self::baseFiles(), 'build' => $build, 'folder' => ''];
         file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         $php = PHP_OS_FAMILY === 'Windows' ? (is_file(PHP_BINDIR . '\\php.exe') ? PHP_BINDIR . '\\php.exe' : 'php') : (PHP_BINARY ?: 'php');
@@ -93,33 +92,39 @@ final class Package
         return ['started' => true];
     }
 
-    /** Runs in the background (tools/make-package.php): copies the installer, adds memory + name. */
+    /** Runs in the background (tools/make-package.php): memory card, base build (first time), copy. */
     public static function run(string $jobFile): void
     {
         $job = json_decode((string)file_get_contents($jobFile), true);
-        $save = function (array $set) use (&$job, $jobFile) { $job = $set + $job; $job['ts'] = time(); file_put_contents($jobFile, json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)); };
+        $t0 = time();
+        $save = function (array $set) use (&$job, $jobFile, $t0) {
+            $job = $set + $job; $job['ts'] = time();
+            $p = (int)($job['pct'] ?? 0); $el = time() - $t0;
+            $job['eta'] = ($job['state'] ?? '') === 'working' && $p >= 3 && $el > 20 ? self::eta((int)round($el / $p * (100 - $p))) : '';
+            file_put_contents($jobFile, json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        };
+        $build = !empty($job['build']);
+        // Overall percent: with a first-time build the build is 0-75 % and the copy 75-98 %
+        $copyFrom = $build ? 75 : 3; $copyTo = 98;
         try {
             $folder = $job['dest'] . DIRECTORY_SEPARATOR . $job['name'] . ' - Setup';
             if (is_dir($folder)) $folder .= ' ' . date('Y-m-d His');
-            if (!mkdir($folder . DIRECTORY_SEPARATOR . 'mnemo-package', 0777, true)) throw new RuntimeException("Cannot create $folder");
-            $save(['folder' => $folder]);
-            $save(['msg' => 'Adding the memory and the name…']);
             $pkg = $folder . DIRECTORY_SEPARATOR . 'mnemo-package';
-            if (!copy($job['card'], $pkg . DIRECTORY_SEPARATOR . 'memory.atlascard')) throw new RuntimeException('Could not add the memory card.');
-            @unlink($job['card']);
-            file_put_contents($pkg . DIRECTORY_SEPARATOR . 'identity.json', json_encode(['ai_name' => $job['name'], 'model' => 'mnemo:7b', 'created' => date('c')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            if (!empty($job['build'])) {
-                // First download on this PC: prepare the AI installer once (later downloads skip this)
-                $save(['pct' => 1, 'msg' => 'First download: preparing the AI installer (one time only, about 10–30 minutes)…']);
-                $bat = realpath(__DIR__ . '/../installer/Build ATLAS installer.bat');
-                $log = atlas_config()['storage_root'] . '/logs/build.log';
-                @mkdir(dirname($log), 0777, true);
-                exec('cmd /c ""' . $bat . '" newborn < NUL > "' . $log . '" 2>&1"');
-                $job['files'] = self::baseFiles();
-                if (!$job['files']) throw new RuntimeException('Preparing the AI installer failed. Details: storage\\logs\\build.log');
-            }
-            $save(['msg' => 'Copying the AI…']);
+            if (!mkdir($pkg, 0777, true)) throw new RuntimeException("Cannot create $folder");
+            $save(['folder' => $folder, 'pct' => 1, 'msg' => 'Saving the memory (what it has learned)…']);
 
+            // 1. Memory + name
+            [$token] = Cards::export(Cards::activeId());
+            if (!rename(Cards::exportPath($token), $pkg . DIRECTORY_SEPARATOR . 'memory.atlascard')) throw new RuntimeException('Could not save the memory.');
+            file_put_contents($pkg . DIRECTORY_SEPARATOR . 'identity.json', json_encode(['ai_name' => $job['name'], 'model' => 'mnemo:7b', 'created' => date('c')], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $save(['pct' => $build ? 2 : 3]);
+
+            // 2. First download on this PC: prepare the AI installer once
+            if ($build) self::buildBase($save);
+            $job['files'] = self::baseFiles();
+            if (!$job['files']) throw new RuntimeException('Preparing the AI installer failed. Details: storage\logs\build.log');
+
+            // 3. Copy the installer
             $total = 0;
             foreach ($job['files'] as $f) $total += (int)filesize($f);
             $done = 0; $last = 0;
@@ -130,7 +135,11 @@ final class Package
                     $buf = fread($in, 8 * 1048576);
                     if ($buf === false || fwrite($out, $buf) === false) throw new RuntimeException('Copy failed. Is the drive full?');
                     $done += strlen($buf);
-                    if (time() !== $last) { $last = time(); $save(['pct' => (int)floor($done / max(1, $total) * 97), 'msg' => 'Copying the AI… ' . round($done / 1073741824, 1) . ' of ' . round($total / 1073741824, 1) . ' GB']); }
+                    if (time() !== $last) {
+                        $last = time();
+                        $save(['pct' => $copyFrom + (int)floor($done / max(1, $total) * ($copyTo - $copyFrom)),
+                               'msg' => 'Copying the AI… ' . round($done / 1073741824, 1) . ' of ' . round($total / 1073741824, 1) . ' GB']);
+                    }
                 }
                 fclose($in); fclose($out);
             }
@@ -150,5 +159,54 @@ final class Package
         } catch (\Throwable $e) {
             $save(['state' => 'error', 'msg' => $e->getMessage()]);
         }
+    }
+
+    /** Runs "Build ATLAS installer.bat newborn" and turns its progress into 2-75 %. */
+    private static function buildBase(callable $save): void
+    {
+        $bat = realpath(__DIR__ . '/../installer/Build ATLAS installer.bat');
+        $log = atlas_config()['storage_root'] . '/logs/build.log';
+        @mkdir(dirname($log), 0777, true);
+        @unlink($log);
+        $stage = 'C:/ATLAS-build/stage';
+        $models = self::dirSize('C:/ATLAS-AI/models') ?: 9 * 1073741824;
+        $proc = proc_open('cmd /c ""' . $bat . '" newborn < NUL > "' . $log . '" 2>&1"', [], $pipes);
+        if (!is_resource($proc)) throw new RuntimeException('Could not start preparing the AI installer.');
+        $stageTotal = 0;
+        while (proc_get_status($proc)['running']) {
+            sleep(2);
+            $txt = (string)@file_get_contents($log);
+            if (str_contains($txt, 'Compiling') || str_contains($txt, 'Compressing')) {
+                // Inno Setup writes ATLAS-Setup-1.bin; it ends up about as big as the staged files
+                if (!$stageTotal) $stageTotal = self::dirSize($stage) ?: $models;
+                $bin = 0;
+                foreach (glob(self::baseDir() . '/ATLAS-Setup-*.bin') ?: [] as $f) { clearstatcache(true, $f); $bin += (int)@filesize($f); }
+                $save(['pct' => 35 + (int)floor(min(1, $bin / $stageTotal) * 40), 'msg' => 'Preparing the AI installer: packing ' . round($bin / 1073741824, 1) . ' of ' . round($stageTotal / 1073741824, 1) . ' GB (first time only)']);
+            } elseif (str_contains($txt, '[5/5]')) {
+                $got = self::dirSize("$stage/models");
+                $save(['pct' => 12 + (int)floor(min(1, $got / $models) * 23), 'msg' => 'Preparing the AI installer: copying the AI ' . round($got / 1073741824, 1) . ' of ' . round($models / 1073741824, 1) . ' GB (first time only)']);
+            } else {
+                $step = str_contains($txt, 'desktop app') ? 11 : (str_contains($txt, '[4/5]') ? 9 : (str_contains($txt, '[3/5]') ? 7 : (str_contains($txt, '[2/5]') ? 4 : 2)));
+                $save(['pct' => $step, 'msg' => 'Preparing the AI installer (first time only)…']);
+            }
+        }
+        proc_close($proc);
+    }
+
+    private static function dirSize(string $dir): int
+    {
+        if (!is_dir($dir)) return 0;
+        $n = 0;
+        try {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $f) $n += (int)@$f->getSize();
+        } catch (\Throwable) {}
+        return $n;
+    }
+
+    private static function eta(int $sec): string
+    {
+        if ($sec < 60) return 'less than a minute left';
+        $m = (int)round($sec / 60);
+        return $m < 90 ? "about $m min left" : 'about ' . round($m / 60, 1) . ' h left';
     }
 }
