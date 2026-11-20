@@ -92,6 +92,8 @@ if exist "%WV%\lib\net462\Microsoft.Web.WebView2.WinForms.dll" if exist "%CSC%" 
   copy /Y "%WV%\runtimes\win-x64\native\WebView2Loader.dll" "%STAGE%\" >nul
   "%CSC%" /nologo /target:winexe /platform:x64 /optimize /win32icon:"%A%\assets\atlas.ico" /out:"%STAGE%\ATLAS.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:"%STAGE%\Microsoft.Web.WebView2.Core.dll" /r:"%STAGE%\Microsoft.Web.WebView2.WinForms.dll" "%HERE%app\AtlasApp.cs"
 )
+if not exist "%WV%\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" curl -L -s --fail -o "%WV%\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" "https://go.microsoft.com/fwlink/?linkid=2124701"
+if exist "%WV%\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" copy /Y "%WV%\MicrosoftEdgeWebView2RuntimeInstallerX64.exe" "%STAGE%\" >nul
 if exist "%STAGE%\ATLAS.exe" ( echo   [ok] ATLAS.exe ) else ( echo   [!] Desktop app could not be made ^(no internet?^). The installer opens ATLAS in an app window instead. )
 
 echo   [5/5] Copying the AI (Ollama + models, about 12 GB) ...

@@ -45,6 +45,7 @@ Source: "{#Stage}\ATLAS.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourc
 Source: "{#Stage}\Microsoft.Web.WebView2.Core.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#Stage}\Microsoft.Web.WebView2.WinForms.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#Stage}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Stage}\MicrosoftEdgeWebView2RuntimeInstallerX64.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#Stage}\xampp\*"; DestDir: "{app}\xampp"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Stage}\ollama\*"; DestDir: "{app}\ollama"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; "Download my AI": the memory and the name sit next to ATLAS-Setup.exe and are picked up at install time
@@ -59,6 +60,7 @@ Name: "{autoprograms}\Stop ATLAS"; Filename: "{app}\Stop ATLAS.bat"; WorkingDir:
 Name: "{autodesktop}\ATLAS - Mnemo AI"; Filename: "{app}\{#Launch}"; WorkingDir: "{app}"; IconFilename: "{app}\atlas.ico"; Tasks: desktopicon
 
 [Run]
+Filename: "{app}\MicrosoftEdgeWebView2RuntimeInstallerX64.exe"; Parameters: "/silent /install"; StatusMsg: "Installing the window component (Microsoft WebView2)..."; Flags: waituntilterminated skipifdoesntexist; Check: NeedsWebView2
 Filename: "{app}\{#Launch}"; Description: "Open it now"; Flags: postinstall nowait skipifsilent shellexec
 
 [UninstallRun]
@@ -67,3 +69,11 @@ Filename: "{app}\Stop ATLAS.bat"; Flags: runhidden waituntilterminated; RunOnceI
 [UninstallDelete]
 Type: files; Name: "{app}\.location"
 Type: filesandordirs; Name: "{app}\package"
+
+[Code]
+function NeedsWebView2: Boolean;
+var v: String;
+begin
+  Result := not (RegQueryStringValue(HKLM, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', v) and (v <> '') and (v <> '0.0.0.0'))
+        and not (RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', v) and (v <> '') and (v <> '0.0.0.0'));
+end;

@@ -36,3 +36,6 @@ Libraries
 
 Full license texts are available from each project's website.
 The Apache License 2.0 is at https://www.apache.org/licenses/LICENSE-2.0
+
+Desktop window
+  Microsoft Edge WebView2 Runtime and SDK ....... Microsoft (redistributable; WebView2 SDK license)

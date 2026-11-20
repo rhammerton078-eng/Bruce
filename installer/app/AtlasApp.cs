@@ -116,6 +116,18 @@ namespace AtlasApp
                 web.Dock = DockStyle.Fill;
                 web.DefaultBackgroundColor = Color.FromArgb(7, 9, 13);
                 string data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ATLAS", "WebView2");
+                string ver = null;
+                try { ver = CoreWebView2Environment.GetAvailableBrowserVersionString(); } catch { }
+                if (string.IsNullOrEmpty(ver))
+                {
+                    // WebView2 Runtime missing: install the copy that came with the installer, once
+                    string wv = Path.Combine(root, "MicrosoftEdgeWebView2RuntimeInstallerX64.exe");
+                    if (File.Exists(wv))
+                    {
+                        status.Text = "Preparing the window (one time only, about a minute)...";
+                        await Task.Run(() => { var p = Process.Start(wv, "/silent /install"); if (p != null) p.WaitForExit(600000); });
+                    }
+                }
                 var env = await CoreWebView2Environment.CreateAsync(null, data);
                 Controls.Add(web);
                 await web.EnsureCoreWebView2Async(env);
@@ -133,8 +145,17 @@ namespace AtlasApp
             {
                 // No WebView2 runtime on this PC: open as an app window in Edge instead
                 status.Text = "Opening " + AiName() + "...";
-                try { Process.Start("msedge.exe", "--app=" + Url + " --window-size=1500,920"); closing = true; Close(); }
-                catch { status.Text = "Could not open the window: " + ex.Message + "\n\nOpen " + Url + " in a browser."; }
+                string[] apps = {
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Google\Chrome\Application\chrome.exe") };
+                foreach (string a in apps)
+                {
+                    if (!File.Exists(a)) continue;
+                    try { Process.Start(a, "--app=" + Url + " --window-size=1500,920"); closing = true; Close(); return; } catch { }
+                }
+                status.Text = "Could not open the window: " + ex.Message + "\n\nOpen " + Url + " in a browser.";
             }
         }
 
