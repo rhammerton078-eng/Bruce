@@ -475,7 +475,7 @@ async function showOverview() {
   const c = S.status.counts;
   let dash = null; try { dash = await api('dashboard'); } catch {}
   setInsp('Overview', `
-    <div class="card"><h4>Mnemo's memory</h4>
+    <div class="card"><h4>${esc(aiName())}'s memory</h4>
       <div class="kpis" style="grid-template-columns:1fr 1fr;gap:8px">
         ${[['Sources', c.documents, 'files'], ['Concepts', c.entities, 'bulb'], ['Links', c.relations, 'link'], ['Topics', c.clusters, 'layers']].map(([l, v, i]) =>
           `<div class="kpi" style="padding:10px"><div class="l">${icon(i, 'sm')}${l}</div><div class="v" style="font-size:20px">${fmtNum(v)}</div></div>`).join('')}
@@ -563,7 +563,7 @@ function chatEmpty() {
 function renderMsg(role, content, sources = [], id = null, feedback = null) {
   const el = document.createElement('div');
   el.className = 'msg ' + role;
-  el.innerHTML = `<div class="av">${role === 'user' ? 'You'.slice(0, 1) : 'M'}</div><div class="bubble"><div class="who">${role === 'user' ? 'You' : 'Mnemo'}</div>
+  el.innerHTML = `<div class="av">${role === 'user' ? 'You'.slice(0, 1) : 'M'}</div><div class="bubble"><div class="who">${role === 'user' ? 'You' : esc(aiName())}</div>
     <div class="content">${role === 'user' ? esc(content).replace(/\n/g, '<br>') : md(content, sources)}</div><div class="srcs"></div><div class="acts"></div></div>`;
   $('#chatInner').appendChild(el);
   if (role === 'assistant') { renderSources(el, sources); renderActs(el, id, feedback, content); }
