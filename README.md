@@ -197,7 +197,7 @@ storage/                 uploads/, inbox/, backups/, cards/ (one folder per extr
 - **Real training (fine-tuning)**: Quality → Training data, then open `ai/finetune/Mnemo_Train_Colab.ipynb` in Google Colab
   (free T4 GPU). Put the resulting `mnemo-7b-q4_k_m.gguf` in Downloads and run `ai\Install trained Mnemo.bat`
   to get `mnemo:7b-trained`. Compare both with Quality → Run benchmark.
-- **Installer**: `installer\Build ATLAS installer.bat` (needs free Inno Setup 6) builds `C:\ATLAS-build\output\ATLAS-Setup.exe`
+- **Installer**: `installer\Build ATLAS installer.bat` (needs free Inno Setup 7 or 6) builds `C:\ATLAS-build\output\ATLAS-Setup.exe`
   with the web server, MySQL, ATLAS, Ollama and the models, either with a newborn Mnemo or with your trained memory.
   The installed copy uses its own ports (web 8765, MySQL 3307) and lives in `C:\ATLAS`.
 - License note: `qwen2.5:7b`, `14b`, `32b` and `nomic-embed-text` are Apache 2.0. `qwen2.5:3b` and `qwen2.5vl:3b` use the

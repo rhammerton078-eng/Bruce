@@ -5,7 +5,7 @@ REM =====================================================================
 REM  Builds ATLAS-Setup.exe: ONE installer with the web server, MySQL,
 REM  ATLAS, the AI program (Ollama) and the AI models. Run it on the PC
 REM  where ATLAS already works (C:\xampp + C:\ATLAS-AI).
-REM  Needs Inno Setup 6 (free): https://jrsoftware.org/isdl.php
+REM  Needs Inno Setup 7 or 6 (free): https://jrsoftware.org/isdl.php
 REM  Output: C:\ATLAS-build\output\ATLAS-Setup.exe (+ .bin parts, about 10-14 GB)
 REM =====================================================================
 set "HERE=%~dp0"
@@ -13,13 +13,14 @@ set "SRC_XAMPP=C:\xampp"
 set "SRC_AI=C:\ATLAS-AI"
 set "BUILD=C:\ATLAS-build"
 set "STAGE=%BUILD%\stage"
-set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
-if not exist "%ISCC%" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+set "ISCC="
+for %%I in ("%ProgramFiles%\Inno Setup 7\ISCC.exe" "%ProgramFiles(x86)%\Inno Setup 7\ISCC.exe" "%ProgramFiles%\Inno Setup 6\ISCC.exe" "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" "%LOCALAPPDATA%\Programs\Inno Setup 7\ISCC.exe" "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe") do if not defined ISCC if exist "%%~I" set "ISCC=%%~I"
 
 echo.
 echo   Build the ATLAS installer
 echo   -------------------------------------------------------------
-if not exist "%ISCC%" ( echo   [!] Inno Setup 6 is not installed. Get it free from jrsoftware.org/isdl.php & pause & exit /b 1 )
+if not defined ISCC ( echo   [!] Inno Setup is not installed. Get it free from jrsoftware.org/isdl.php & pause & exit /b 1 )
+echo   Using %ISCC%
 if not exist "%SRC_XAMPP%\htdocs\atlas\index.php" ( echo   [!] ATLAS not found in %SRC_XAMPP%\htdocs\atlas & pause & exit /b 1 )
 if not exist "%SRC_AI%\ollama\ollama.exe" ( echo   [!] Ollama not found in %SRC_AI%\ollama & pause & exit /b 1 )
 if not exist "%SRC_AI%\models\manifests" ( echo   [!] AI models not found in %SRC_AI%\models & pause & exit /b 1 )
