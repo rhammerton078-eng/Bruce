@@ -932,13 +932,32 @@ function dlProgress() {
       return;
     }
     if (j.state === 'error') { clearInterval(dl.timer); $('#dlBody').innerHTML = `<div class="alert critical"><div>${esc(j.msg)}</div></div><div style="margin-top:12px"><button class="btn" id="dlBack">Back</button></div>`; $('#dlBack').onclick = openDownload; return; }
+    const stuck = info.log || (!j.pct && j.ts && Date.now() / 1000 - j.ts > 30);
     $('#dlBody').innerHTML = `<div class="dl-done"><img src="assets/icon.svg" alt=""><h3>Preparing ${esc(j.name || 'your AI')}…</h3>
       <div class="progress dl-bar"><i style="width:${Math.max(2, j.pct || 0)}%"></i></div><b style="font-size:18px">${j.pct || 0}%</b>${j.eta ? ` <span class="muted">· ${esc(j.eta)}</span>` : ''}
-      <div class="muted" style="margin-top:4px">${esc(j.msg || '')}</div><div class="muted" style="font-size:12px;margin-top:8px">You can close this window and keep using ATLAS. Come back here to see when it is ready.</div></div>`;
+      <div class="muted" style="margin-top:4px">${esc(j.msg || '')}</div>${stuck ? `<div class="alert warn" style="margin-top:12px;text-align:left"><div><b>It has not started.</b> Click Cancel, then Download again.${info.log ? '<pre class="sys-log" style="max-height:140px">' + esc(info.log) + '</pre>' : ''}</div></div>` : ''}
+      <div class="muted" style="font-size:12px;margin-top:8px">You can close this window: a small progress bar stays at the bottom right.</div>
+      <div style="margin-top:12px"><button class="btn sm danger" id="dlCancel">Cancel</button></div></div>`;
+    $('#dlCancel').onclick = async () => { if (!confirm('Cancel this download?')) return; await api('package_cancel', {}, 'POST'); openDownload(); };
   };
   draw(); clearInterval(dl.timer); dl.timer = setInterval(() => { if ($('#dlModal').classList.contains('show')) draw(); }, 1500);
 }
 $('#btnDownloadAI').onclick = openDownload;
+
+// Small download progress in the status bar (visible while the window is closed)
+async function refreshDownloadMini() {
+  let info; try { info = await api('package_info'); } catch { return; }
+  const j = info.job || {}, el = $('#sbDl');
+  if (j.state === 'working') {
+    el.hidden = false;
+    el.innerHTML = `${icon('download', 'sm')}<span>${esc(j.name || 'AI')}</span><div class="progress"><i style="width:${Math.max(2, j.pct || 0)}%"></i></div><b>${j.pct || 0}%</b>`;
+    el.title = (j.msg || '') + (j.eta ? ' · ' + j.eta : '') + '\nClick to open';
+  } else if (j.state === 'done' && Date.now() / 1000 - (j.ts || 0) < 600) {
+    el.hidden = false; el.innerHTML = `${icon('download', 'sm')}<span>${esc(j.name)} is ready</span>`; el.title = j.folder || '';
+  } else el.hidden = true;
+}
+$('#sbDl').onclick = openDownload;
+setInterval(refreshDownloadMini, 3000); refreshDownloadMini();
 
 // ---------------------------------------------------------------- background parts (AI · Memory · Learner)
 const sysView = {log: 'learner', timer: null};

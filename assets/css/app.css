@@ -509,3 +509,7 @@ label.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--
 .sys-btns{display:flex;gap:6px;margin-top:10px}
 .btn.danger{border-color:rgba(248,113,113,.45);color:#fca5a5}
 .btn.danger:hover{background:rgba(248,113,113,.12)}
+.statusbar .sb-dl{background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.35);border-radius:7px;padding:2px 8px;color:var(--text);font:inherit;cursor:pointer;gap:6px}
+.statusbar .sb-dl[hidden]{display:none}
+.statusbar .sb-dl .progress{width:90px;height:6px}
+.statusbar .sb-dl .progress>i{background:linear-gradient(90deg,var(--accent),#22d3ee)}

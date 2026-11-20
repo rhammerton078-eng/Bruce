@@ -49,7 +49,22 @@ final class Package
             'default_dest' => $default, 'ai_name' => Mnemo::aiName(),
             'knows' => ['sources' => (int)$db->val("SELECT COUNT(*) FROM documents WHERE sha256 <> 'taught-knowledge'"), 'concepts' => (int)$db->val('SELECT COUNT(*) FROM entities')],
             'job' => is_array($job) ? $job : null,
+            'log' => is_array($job) && (($job['state'] ?? '') === 'error' || (($job['pct'] ?? 0) == 0 && time() - (int)($job['ts'] ?? 0) > 20))
+                ? trim(@file_get_contents(atlas_config()['storage_root'] . '/logs/package-err.log') . "\n" . @file_get_contents(atlas_config()['storage_root'] . '/logs/package.log')) : '',
         ];
+    }
+
+    /** Stops a running download (and a first-time build it started). */
+    public static function cancel(): array
+    {
+        $job = json_decode((string)@file_get_contents(self::jobFile()), true);
+        if (!is_array($job)) return ['ok' => true];
+        $pid = (int)($job['pid'] ?? 0);
+        if ($pid && PHP_OS_FAMILY === 'Windows') @exec("taskkill /PID $pid /T /F 2>&1");
+        elseif ($pid && function_exists('posix_kill')) @posix_kill($pid, 9);
+        $job['state'] = 'error'; $job['msg'] = 'Cancelled.'; $job['ts'] = time();
+        file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return ['ok' => true];
     }
 
     public static function cleanName(string $name): string
@@ -82,12 +97,19 @@ final class Package
                 'dest' => $dest, 'card' => '', 'files' => self::baseFiles(), 'build' => $build, 'folder' => ''];
         file_put_contents(self::jobFile(), json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        $php = PHP_OS_FAMILY === 'Windows' ? (is_file(PHP_BINDIR . '\\php.exe') ? PHP_BINDIR . '\\php.exe' : 'php') : (PHP_BINARY ?: 'php');
-        $script = realpath(__DIR__ . '/../tools/make-package.php');
+        $php = PHP_OS_FAMILY === 'Windows' ? (is_file(PHP_BINDIR . '\\php.exe') ? PHP_BINDIR . '\\php.exe' : 'C:\\xampp\\php\\php.exe') : (PHP_BINARY ?: 'php');
+        $script = (string)realpath(__DIR__ . '/../tools/make-package.php');
+        $logs = atlas_config()['storage_root'] . '/logs';
+        @mkdir($logs, 0777, true);
+        @unlink("$logs/package.log");
         if (PHP_OS_FAMILY === 'Windows') {
-            pclose(popen('start "" /B "' . $php . '" "' . $script . '" "' . self::jobFile() . '"', 'r'));
+            $q = fn(string $x) => "'" . str_replace("'", "''", str_replace('/', '\\', $x)) . "'";
+            $ps = 'Start-Process -FilePath ' . $q($php) . ' -ArgumentList ' . $q($script) . ',' . $q(self::jobFile())
+                . ' -WindowStyle Hidden -RedirectStandardOutput ' . $q("$logs/package.log") . ' -RedirectStandardError ' . $q("$logs/package-err.log");
+            @exec('powershell -NoProfile -ExecutionPolicy Bypass -Command "' . str_replace('"', '\"', $ps) . '" 2>&1', $out, $rc);
+            if ($rc !== 0) pclose(popen('start "" /B "' . $php . '" "' . $script . '" "' . self::jobFile() . '"', 'r'));   // fallback
         } else {
-            exec(escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg(self::jobFile()) . ' > /dev/null 2>&1 &');
+            exec(escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg(self::jobFile()) . ' > ' . escapeshellarg("$logs/package.log") . ' 2>&1 &');
         }
         return ['started' => true];
     }
@@ -97,6 +119,15 @@ final class Package
     {
         $job = json_decode((string)file_get_contents($jobFile), true);
         $t0 = time();
+        $job['pid'] = getmypid();
+        register_shutdown_function(function () use ($jobFile) {
+            $e = error_get_last();
+            $j = json_decode((string)@file_get_contents($jobFile), true);
+            if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true) && is_array($j) && ($j['state'] ?? '') === 'working') {
+                $j['state'] = 'error'; $j['msg'] = 'Stopped: ' . $e['message']; $j['ts'] = time();
+                file_put_contents($jobFile, json_encode($j, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            }
+        });
         $save = function (array $set) use (&$job, $jobFile, $t0) {
             $job = $set + $job; $job['ts'] = time();
             $p = (int)($job['pct'] ?? 0); $el = time() - $t0;

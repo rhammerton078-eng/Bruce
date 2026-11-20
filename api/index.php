@@ -29,7 +29,7 @@ if (PHP_SAPI !== 'cli' && !in_array($remote, ['127.0.0.1', '::1'], true) && !is_
 }
 $writes = ['card_create', 'card_switch', 'card_rename', 'card_remove', 'card_export', 'card_import', 'curiosity_answer', 'curiosity_skip', 'wonder', 'lesson_teach', 'lesson_exam', 'lesson_delete', 'baby_settings', 'tutorial_save', 'demo_load', 'demo_remove', 'contradiction_resolve', 'review_decide', 'merge', 'merge_undo', 'hypothesis_decide', 'truth_scan', 'golden_add', 'golden_delete', 'golden_toggle', 'golden_run',
     'self_quiz_run', 'quiz_promote', 'approved_delete', 'watch_add', 'watch_delete', 'watch_check', 'watch_read', 'card_review', 'cards_generate', 'card_delete',
-    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'package_create', 'service', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
+    'image_search', 'vector_native', 'backup_create', 'backup_delete', 'restore', 'wipe', 'entity_forget', 'reembed', 'rebuild_index', 'optimize', 'storage_settings_save', 'upload', 'process', 'ask', 'teach', 'nightly', 'feedback', 'settings_save', 'package_create', 'package_cancel', 'service', 'document_delete', 'document_retry', 'collection_create', 'document_update', 'conversation_delete'];
 if (in_array($action, $writes, true) && $method !== 'POST') json_out(['error' => 'POST required'], 405);
 
 // Background parts: status and start/stop buttons work even while the memory (MySQL) is stopped
@@ -329,6 +329,9 @@ try {
 
         case 'package_info':
             json_out(Package::info());
+
+        case 'package_cancel':
+            json_out(Package::cancel());
 
         case 'package_create':
             session_write_close();
